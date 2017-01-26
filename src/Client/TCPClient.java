@@ -36,15 +36,16 @@ public class TCPClient extends Thread {
 
     }
 
-//    public static void main(String args[]) {
-////        Constants.BLOCKSIZE_UPLINK = Integer.parseInt(args[0]);
-////        Constants.BLOCKSIZE_DOWNLINK = Integer.parseInt(args[1]);
-////        Constants.SOCKET_RCVBUF = Integer.parseInt(args[2]);
-////        Constants.SOCKET_SNDBUF = Integer.parseInt(args[3]);
-////        Constants.SO_TIMEOUT = Integer.parseInt(args[4]);
-//
-//        //Client New instance
-//        TCPClient tcpClient = new TCPClient();
-//        tcpClient.start();
-//    }
+    public static void main(String args[]) {
+//        Constants.BLOCKSIZE_UPLINK = Integer.parseInt(args[0]);
+//        Constants.BLOCKSIZE_DOWNLINK = Integer.parseInt(args[1]);
+//        Constants.SOCKET_RCVBUF = Integer.parseInt(args[2]);
+//        Constants.SOCKET_SNDBUF = Integer.parseInt(args[3]);
+//        Constants.SO_TIMEOUT = Integer.parseInt(args[4]);
+//        Constants.NUMBER_BLOCKS = Integer.parseInt(args[5]);
+
+        //Client New instance
+        TCPClient tcpClient = new TCPClient();
+        tcpClient.start();
+    }
 }

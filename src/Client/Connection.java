@@ -5,18 +5,14 @@ package Client;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.IOException;
 import java.net.Socket;
-import java.util.ArrayList;
 import java.util.Random;
 
 public class Connection extends Thread {
-    
-    private WriteXMLFile_deltas_Client writeXMLFile_deltas_Client =null;
-    private WriteXMLFile_bytes1sec writeXML1secBytes = null;
-    private WriteXMLFile_packet_train writeXMLpacketTrain = null;
+
     private Socket s = null;
     private RTInputStream RTin;
     private RTOutputStream RTout;
@@ -34,6 +30,7 @@ public class Connection extends Thread {
             RTout = new RTOutputStream(s.getOutputStream());
             dataIn = new DataInputStream(RTin);
             dataOut = new DataOutputStream(RTout);
+
         } catch (Exception e) {
             System.out.println("Error in connection:" + e.getMessage());
         }
@@ -42,8 +39,33 @@ public class Connection extends Thread {
     public void run() {
         try {
             uplink_Client_snd();
-            //sleep(1000);
+            sleep(1000);
             downlink_Client_rcv();
+            calculateDeltas();
+            try {
+                //Send length
+                if (dataMeasurement.deltaINVector_uplink.size() == dataMeasurement.deltaOUTVector_downlink.size()) {
+                    dataOut.writeInt(dataMeasurement.deltaINVector_uplink.size());
+                    dataOut.flush();
+                }
+                //Send Delta Vectors
+                for (int j = 0; j < dataMeasurement.deltaINVector_uplink.size(); j++) {
+                    dataOut.writeLong(dataMeasurement.deltaINVector_uplink.get(j));
+                    dataOut.writeLong(dataMeasurement.deltaOUTVector_downlink.get(j));
+                    dataOut.flush();
+                }
+                //Send 1secBytes Vector, sending size first
+                dataOut.writeInt(dataMeasurement.SampleSecond.size());
+                for (int k = 0; k < dataMeasurement.SampleSecond.size(); k++) {
+                    dataOut.writeInt(dataMeasurement.SampleSecond.get(k).bytesRead);
+                    dataOut.flush();
+                    dataOut.writeLong(dataMeasurement.SampleSecond.get(k).sampleTime);
+                    dataOut.flush();
+                }
+
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
         } catch (Exception ex) {
             ex.printStackTrace();
             System.err.println("Sending Data Failure:" + ex.getMessage());
@@ -52,14 +74,6 @@ public class Connection extends Thread {
                 if (s != null) {
                     s.close();
                 }
-
-                for (int i = 1; i < RTin.readTimeVector.size(); i++) {
-                    dataMeasurement.deltaINVector_uplink.add(RTout.writeTimeVector.get(i) - RTout.writeTimeVector.get(i - 1));
-                    dataMeasurement.deltaOUTVector_downlink.add(RTin.readTimeVector.get(i) - RTin.readTimeVector.get(i - 1));
-                }
-                writeXMLFile_deltas_Client = new WriteXMLFile_deltas_Client("Client-packetTrain", dataMeasurement.deltaINVector_uplink, dataMeasurement.deltaOUTVector_downlink);    
-                writeXML1secBytes = new WriteXMLFile_bytes1sec("Client-1secBytes", dataMeasurement.SampleSecond);
-                //writeXMLpacketTrain = new WriteXMLFile_packet_train("packet_train", DataMeasurement.packetTrains);
             } catch (IOException ex) {
                 System.err.println("Closing Client Side Socket Failure:" + ex.getMessage());
             }
@@ -87,7 +101,7 @@ public class Connection extends Thread {
     }
 
     private void downlink_Client_rcv() {
-        try {           
+        try {
             byte[] rcv_buf = new byte[Constants.BLOCKSIZE_DOWNLINK];
             int num_blocks = 0, n = 0;
             num_blocks = dataIn.readInt();
@@ -122,6 +136,13 @@ public class Connection extends Thread {
             ex.printStackTrace();
         } finally {
             reminderClient.timer.cancel();
+        }
+    }
+
+    private void calculateDeltas() {
+        for (int i = 1; i < RTin.readTimeVector.size(); i++) {
+            dataMeasurement.deltaINVector_uplink.add(RTout.writeTimeVector.get(i) - RTout.writeTimeVector.get(i - 1));
+            dataMeasurement.deltaOUTVector_downlink.add(RTin.readTimeVector.get(i) - RTin.readTimeVector.get(i - 1));
         }
     }
 

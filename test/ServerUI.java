@@ -3,8 +3,12 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package Client;
 
+
+import Client.Constants;
+import Client.DataMeasurement;
+import Client.RTInputStream;
+import Client.TCPClient;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -388,6 +392,7 @@ public class ServerUI extends javax.swing.JFrame implements ActionListener {
             jSpinner3.setEnabled(true);
             jSpinner4.setEnabled(true);
             jSpinner5.setEnabled(true);
+            jSpinner6.setEnabled(true);
             jTCPpanel.setEnabled(true);
             jGraphPanel.setEnabled(true);
         } else {
@@ -404,6 +409,7 @@ public class ServerUI extends javax.swing.JFrame implements ActionListener {
             jSpinner3.setEnabled(false);
             jSpinner4.setEnabled(false);
             jSpinner5.setEnabled(false);
+            jSpinner6.setEnabled(false);
             jTCPpanel.setEnabled(false);
             jGraphPanel.setEnabled(false);
             jGraphPanel.updateUI();
