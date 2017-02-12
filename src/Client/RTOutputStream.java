@@ -12,9 +12,9 @@ import java.util.Vector;
 
 public class RTOutputStream extends FilterOutputStream {
 
-    protected Vector<Long> writeTimeVector = null;
+    public Vector<Long> writeTimeVector = null;
 
-    RTOutputStream(OutputStream out) {
+    public RTOutputStream(OutputStream out) {
         super(out);
         writeTimeVector = new Vector<Long>();
     }

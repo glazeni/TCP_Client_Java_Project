@@ -13,7 +13,7 @@ import java.util.Vector;
 public class RTInputStream extends FilterInputStream {
 
     public static int bytesTotal = 0;
-    protected Vector<Long> readTimeVector = null;
+    public Vector<Long> readTimeVector = null;
 
     public RTInputStream(InputStream in) {
         super(in);

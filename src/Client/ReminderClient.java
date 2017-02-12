@@ -17,10 +17,10 @@ import org.jfree.data.time.Second;
  */
 public class ReminderClient extends Thread {
 
-    public static volatile boolean isRunningDownlink;
+    public volatile boolean isRunning;
     public Timer timer = null;
-    private int i = 0;
     private DataMeasurement dataMeasurement = null;
+    int i = 0;
 
     public ReminderClient(int seconds, DataMeasurement _dataMeasurement) {
         this.dataMeasurement = _dataMeasurement;
@@ -40,7 +40,8 @@ public class ReminderClient extends Thread {
             try {
                 System.err.println("REMINDER CLIENT" + i);
                 i++;
-                dataMeasurement.add_SampleSecond(RTInputStream.bytesTotal, System.currentTimeMillis());
+                dataMeasurement.add_SampleSecond_down(RTInputStream.bytesTotal, System.currentTimeMillis());
+
             } catch (Exception ex) {
                 ex.printStackTrace();
             } finally {

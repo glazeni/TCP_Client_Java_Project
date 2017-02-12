@@ -15,5 +15,6 @@ public class TCP_Properties {
         s.setSoTimeout(Constants.SO_TIMEOUT);
         s.setTcpNoDelay(true);
         s.setSoLinger(false, 0);
+
     }
 }
