@@ -31,7 +31,8 @@ class DataSecond {
 
 public class DataMeasurement {
 
-    
+    protected Vector<DataSecond> SampleReadTime = null;
+    protected Vector<DataSecond> SampleWriteTime = null;
     protected Vector<DataSample> SamplesBlock = null;
     protected Vector<DataSecond> SampleSecond_up = null;
     protected Vector<DataSecond> SampleSecond_down = null;
@@ -39,10 +40,13 @@ public class DataMeasurement {
     protected Vector<Long> deltaOUTVector_uplink = null; //Arrival time uplink vector
     protected Vector<Long> deltaINVector_downlink = null; //Sending time downlink vector
     protected Vector<Long> deltaOUTVector_downlink = null; //Arrival time downlink vector
-    public Vector<Long> aux_writeTimeVector = null;
+    protected Vector<Long> aux_writeTimeVector = null;
+    protected Vector<Long> ACKTimingVector = null;
 
     public DataMeasurement() {
         try {
+            SampleReadTime = new Vector<DataSecond>();
+            SampleWriteTime = new Vector<DataSecond>();
             SamplesBlock = new Vector<DataSample>();
             SampleSecond_up = new Vector<DataSecond>();
             SampleSecond_down = new Vector<DataSecond>();
@@ -51,6 +55,7 @@ public class DataMeasurement {
             deltaINVector_downlink = new Vector<Long>();
             deltaOUTVector_downlink = new Vector<Long>();
             aux_writeTimeVector = new Vector<Long>();
+            ACKTimingVector = new Vector<Long>();
         } catch (Exception ex) {
             ex.getStackTrace();
         }
@@ -71,5 +76,9 @@ public class DataMeasurement {
     }
     public void add_SampleSecond_down(int _bytes, long _sampleTime) {
         SampleSecond_down.add(new DataSecond(_bytes, _sampleTime)); 
+    }
+    
+    public void add_SampleReadTime(int _bytes, long _sampleTime) {
+        SampleReadTime.add(new DataSecond(_bytes, _sampleTime));
     }
 }

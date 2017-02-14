@@ -12,7 +12,8 @@ import java.util.Vector;
 
 public class RTInputStream extends FilterInputStream {
 
-    public static int bytesTotal = 0;
+    private int bytesTotal = 0;
+    public static int bytesGraph=0;
     public Vector<Long> readTimeVector = null;
 
     public RTInputStream(InputStream in) {
@@ -26,6 +27,7 @@ public class RTInputStream extends FilterInputStream {
         int cnt = super.read();
         return cnt;
     }
+    
 
     @Override
     public int read(byte data[]) throws IOException {
@@ -40,7 +42,15 @@ public class RTInputStream extends FilterInputStream {
         int count = super.read(data, off, len);
 
         bytesTotal += count;//Sum of all read bytes
-        //DataMeasurement.add_PacketTrain_Sample(count, start, System.currentTimeMillis());
+        bytesGraph += count;
         return count;
+    }
+    
+    public int getBytes(){
+        return bytesTotal;
+    }
+    
+    public void clearBytes(){
+        bytesTotal=0;
     }
 }

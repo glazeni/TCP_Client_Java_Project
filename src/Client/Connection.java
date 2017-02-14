@@ -7,33 +7,31 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
-import java.text.SimpleDateFormat;
-import java.time.Clock;
-import java.util.Calendar;
-import java.util.Locale;
-import java.util.Random;
-import java.util.TimeZone;
 import java.util.Vector;
 
 public class Connection extends Thread {
 
+    private Socket s_down = null;
+    private Socket s_report = null;
     private Socket s = null;
-    private RTInputStream RTin;
-    private RTOutputStream RTout;
-    private DataInputStream dataIn;
-    private DataOutputStream dataOut;
-    private DataMeasurement dataMeasurement;
-    private ReminderClient reminderClient;
-    private Socket socketControl = null;
-    public static int byteCnt = 0;
-    public static int byteSecond = 0;
+    private RTInputStream RTin = null;
+    private RTOutputStream RTout = null;
+    private DataInputStream dataIn = null;
+    private DataOutputStream dataOut = null;
+    private DataMeasurement dataMeasurement = null;
+    private ReminderClient reminderClient = null;
+    private int byteCnt = 0;
+    private int byteSecond = 0;
     private String METHOD = null;
     private double AvaBW = 0;
     private Vector<Double> AvailableBW = null;
-    private long runningTime = 0;
+    private TCP_Properties TCP_param = null;
+    private long runningTime = 5000;
+    private int ID = 0;
 
-    public Connection(Socket _s, DataMeasurement _dataMeasurement) {
+    public Connection(int _ID, Socket _s, DataMeasurement _dataMeasurement) {
         try {
+            this.ID = _ID;
             this.s = _s;
             this.dataMeasurement = _dataMeasurement;
             RTin = new RTInputStream(s.getInputStream());
@@ -83,21 +81,6 @@ public class Connection extends Thread {
                     break;
                 case "ACKTiming_Report":
                     Method_ACKTiming_Report_Client();
-                    break;
-                case "ACKTIMING":
-                    //Parameters
-                    Constants.SOCKET_RCVBUF = 14600;
-                    Constants.SOCKET_RCVBUF = 14600;
-                    Constants.NUMBER_BLOCKS = 10000;
-                    //Measurements
-                    dataOut.writeByte(1);
-                    while (System.currentTimeMillis() < System.currentTimeMillis() + 10000) {
-                        //uplink_Client_snd();
-                    }
-                    dataOut.writeByte(2);
-                    while (System.currentTimeMillis() < System.currentTimeMillis() + 10000) {
-                        downlink_Client_rcv();
-                    }
                     break;
                 default:
                     System.err.println("INVALID MEHTHOD");
@@ -159,7 +142,8 @@ public class Connection extends Thread {
             System.out.println("\n downlink_Client_rcvInSeconds");
             //Initialize Timer
             if (METHOD.equalsIgnoreCase("MV_Downlink")) {
-                reminderClient = new ReminderClient(1, this.dataMeasurement);
+                reminderClient = new ReminderClient(1, this.dataMeasurement, this.RTin);
+                reminderClient.start();
             }
             long now = System.currentTimeMillis();
             while (System.currentTimeMillis() < _end) {
@@ -171,26 +155,25 @@ public class Connection extends Thread {
 
                     if (n > 0) {
                         byteCnt += n;
-                        byteSecond += n;
-                        if ((System.currentTimeMillis() >= (now + 1000)) && METHOD.equalsIgnoreCase("MV_readVectorDOWN")) {
-                            System.out.println("ENTROU");
-                            now = System.currentTimeMillis();
-                            dataMeasurement.add_SampleSecond_down(byteSecond, System.currentTimeMillis());
-                            byteSecond = 0;
+                        if(METHOD.equalsIgnoreCase("MV_readVectorDOWN")){
+                            dataMeasurement.add_SampleReadTime(byteCnt, System.currentTimeMillis());
                         }
+//                        byteSecond += n;
+//                        if ((System.currentTimeMillis() >= (now + 1000)) && METHOD.equalsIgnoreCase("MV_readVectorDOWN")) {
+//                            now = System.currentTimeMillis();
+//                            dataMeasurement.add_SampleSecond_down(byteSecond, System.currentTimeMillis());
+//                            byteSecond = 0;
+//                        }
                     } else {
-                        System.out.println("Read n<0");
+                        System.err.println("Read n<0");
                         break;
                     }
 
                     if (byteCnt < Constants.BLOCKSIZE) {
-                        System.err.println("Read " + n + " bytes");
+                        System.out.println("Read " + n + " bytes");
                         //Keep reading MTU
                     } else {
                         //MTU is finished
-                        if (METHOD.equalsIgnoreCase("MV_Downlink")) {
-                            dataMeasurement.add_SampleSecond_down(byteCnt, System.currentTimeMillis());
-                        }
                         break;
                     }
 
@@ -361,8 +344,20 @@ public class Connection extends Thread {
             uplink_Client_sndInSeconds();
         } catch (IOException ex) {
             ex.printStackTrace();
-        }
+        } finally {
+            try {
+                //Socket + Connection Downlink
+                s_down = new Socket(Constants.SERVER_IP, Constants.SERVERPORT);
+                TCP_param = new TCP_Properties(s_down);
+                dataOut = new DataOutputStream(s_down.getOutputStream());
+                dataOut.writeInt(this.ID);
+                Thread c = new Connection(this.ID, s_down, this.dataMeasurement);
+                c.start();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
 
+        }
     }
 
     private void Method_MV_Downlink_Client() {
@@ -371,6 +366,7 @@ public class Connection extends Thread {
         Constants.SOCKET_RCVBUF = 14600;
 
         //Measurements
+        dataMeasurement.SampleSecond_down.clear();
         try {
             //Downlink
             dataIn.readByte();
@@ -378,6 +374,18 @@ public class Connection extends Thread {
             downlink_Client_rcvInSeconds(end);
         } catch (IOException ex) {
             ex.printStackTrace();
+        } finally {
+            try {
+                //Socket + Connection Report
+                s_report = new Socket(Constants.SERVER_IP, Constants.SERVERPORT);
+                TCP_param = new TCP_Properties(s_report);
+                dataOut = new DataOutputStream(s_report.getOutputStream());
+                dataOut.writeInt(this.ID);
+                Thread c = new Connection(this.ID, s_report, this.dataMeasurement);
+                c.start();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
         }
     }
 
@@ -395,8 +403,6 @@ public class Connection extends Thread {
         } catch (IOException ex) {
             ex.printStackTrace();
         } finally {
-            RTin.readTimeVector.clear();
-            RTout.writeTimeVector.clear();
             dataMeasurement.SampleSecond_down.clear();
             System.err.println("Method_MV_Client along with Report is done!");
         }
@@ -414,6 +420,18 @@ public class Connection extends Thread {
             uplink_Client_sndInSeconds();
         } catch (IOException ex) {
             ex.printStackTrace();
+        } finally {
+            try {
+                //Socket + Connection Downlink
+                s_down = new Socket(Constants.SERVER_IP, Constants.SERVERPORT);
+                TCP_param = new TCP_Properties(s_down);
+                dataOut = new DataOutputStream(s_down.getOutputStream());
+                dataOut.writeInt(this.ID);
+                Thread c = new Connection(this.ID, s_down, this.dataMeasurement);
+                c.start();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
         }
     }
 
@@ -423,6 +441,7 @@ public class Connection extends Thread {
         Constants.SOCKET_RCVBUF = 14600;
 
         //Measurements
+        dataMeasurement.SampleSecond_down.clear();
         try {
             //Downlink
             dataIn.readByte();
@@ -430,6 +449,18 @@ public class Connection extends Thread {
             downlink_Client_rcvInSeconds(end);
         } catch (IOException ex) {
             ex.printStackTrace();
+        } finally {
+            try {
+                //Socket + Connection Report
+                s_report = new Socket(Constants.SERVER_IP, Constants.SERVERPORT);
+                TCP_param = new TCP_Properties(s_report);
+                dataOut = new DataOutputStream(s_report.getOutputStream());
+                dataOut.writeInt(this.ID);
+                Thread c = new Connection(this.ID, s_report, this.dataMeasurement);
+                c.start();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
         }
     }
 
@@ -447,8 +478,6 @@ public class Connection extends Thread {
         } catch (IOException ex) {
             ex.printStackTrace();
         } finally {
-            RTin.readTimeVector.clear();
-            RTout.writeTimeVector.clear();
             dataMeasurement.SampleSecond_down.clear();
             System.err.println("Method_MV_readVector_Client along with Report is done!");
         }
@@ -466,6 +495,18 @@ public class Connection extends Thread {
             uplink_Client_sndInSeconds();
         } catch (IOException ex) {
             ex.printStackTrace();
+        } finally {
+            try {
+                //Socket + Connection Downlink
+                s_down = new Socket(Constants.SERVER_IP, Constants.SERVERPORT);
+                TCP_param = new TCP_Properties(s_down);
+                dataOut = new DataOutputStream(s_down.getOutputStream());
+                dataOut.writeInt(this.ID);
+                Thread c = new Connection(this.ID, s_down, this.dataMeasurement);
+                c.start();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
         }
     }
 
@@ -482,6 +523,18 @@ public class Connection extends Thread {
             downlink_Client_rcvInSeconds(end);
         } catch (IOException ex) {
             ex.printStackTrace();
+        } finally {
+            try {
+                //Socket + Connection Report
+                s_report = new Socket(Constants.SERVER_IP, Constants.SERVERPORT);
+                TCP_param = new TCP_Properties(s_report);
+                dataOut = new DataOutputStream(s_report.getOutputStream());
+                dataOut.writeInt(this.ID);
+                Thread c = new Connection(this.ID, s_report, this.dataMeasurement);
+                c.start();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
         }
     }
 
@@ -497,8 +550,6 @@ public class Connection extends Thread {
         } catch (IOException ex) {
             ex.printStackTrace();
         } finally {
-            RTin.readTimeVector.clear();
-            RTout.writeTimeVector.clear();
             dataMeasurement.aux_writeTimeVector.clear();
             System.err.println("Method_ACKTiming_Client along with Report is done!");
         }

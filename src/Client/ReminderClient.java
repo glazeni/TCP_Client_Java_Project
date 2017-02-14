@@ -20,10 +20,12 @@ public class ReminderClient extends Thread {
     public volatile boolean isRunning;
     public Timer timer = null;
     private DataMeasurement dataMeasurement = null;
+    private RTInputStream RTin = null;
     int i = 0;
 
-    public ReminderClient(int seconds, DataMeasurement _dataMeasurement) {
+    public ReminderClient(int seconds, DataMeasurement _dataMeasurement, RTInputStream _RTin) {
         this.dataMeasurement = _dataMeasurement;
+        this.RTin = _RTin;
         timer = new Timer();
         //timer.schedule(new RemindTask(), 0, seconds);
         timer.scheduleAtFixedRate(new RemindTask(), 0, (seconds * 1000));
@@ -40,12 +42,12 @@ public class ReminderClient extends Thread {
             try {
                 System.err.println("REMINDER CLIENT" + i);
                 i++;
-                dataMeasurement.add_SampleSecond_down(RTInputStream.bytesTotal, System.currentTimeMillis());
+                dataMeasurement.add_SampleSecond_down(RTin.getBytes(), System.currentTimeMillis());
 
             } catch (Exception ex) {
                 ex.printStackTrace();
             } finally {
-                RTInputStream.bytesTotal = 0;
+                RTin.clearBytes();
             }
         }
     }
