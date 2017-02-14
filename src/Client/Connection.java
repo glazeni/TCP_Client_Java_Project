@@ -3,9 +3,11 @@
  */
 package Client;
 
+import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.Socket;
 import java.util.Vector;
 
@@ -155,7 +157,7 @@ public class Connection extends Thread {
 
                     if (n > 0) {
                         byteCnt += n;
-                        if(METHOD.equalsIgnoreCase("MV_readVectorDOWN")){
+                        if (METHOD.equalsIgnoreCase("MV_readVectorDOWN")) {
                             dataMeasurement.add_SampleReadTime(byteCnt, System.currentTimeMillis());
                         }
 //                        byteSecond += n;
@@ -283,8 +285,8 @@ public class Connection extends Thread {
         } catch (IOException ex) {
             ex.printStackTrace();
         } finally {
-            RTin.readTimeVector.clear();
-            RTout.writeTimeVector.clear();
+            String cmd = "iperf3 -p 11008 -i 1 -N -w 14600 -l 1460 -c 193.136.127.218";
+            RunShellCommandFromJava(cmd);
             System.err.println("Method_PGM along with Report is done!");
         }
 
@@ -325,8 +327,8 @@ public class Connection extends Thread {
         } catch (IOException ex) {
             ex.printStackTrace();
         } finally {
-            RTin.readTimeVector.clear();
-            RTout.writeTimeVector.clear();
+            String cmd = "iperf3 -p 11008 -i 1 -N -w 14600 -l 1460 -c 193.136.127.218";
+            RunShellCommandFromJava(cmd);
             System.err.println("Method_PT along with report is done!");
         }
 
@@ -351,6 +353,8 @@ public class Connection extends Thread {
                 TCP_param = new TCP_Properties(s_down);
                 dataOut = new DataOutputStream(s_down.getOutputStream());
                 dataOut.writeInt(this.ID);
+                String cmd = "iperf3 -p 11008 -i 1 -N -w 14600 -l 1460 -c 193.136.127.218";
+                RunShellCommandFromJava(cmd);
                 Thread c = new Connection(this.ID, s_down, this.dataMeasurement);
                 c.start();
             } catch (IOException ex) {
@@ -381,6 +385,8 @@ public class Connection extends Thread {
                 TCP_param = new TCP_Properties(s_report);
                 dataOut = new DataOutputStream(s_report.getOutputStream());
                 dataOut.writeInt(this.ID);
+                String cmd = "iperf3 -p 11008 -i 1 -N -w 14600 -l 1460 -c 193.136.127.218";
+                RunShellCommandFromJava(cmd);
                 Thread c = new Connection(this.ID, s_report, this.dataMeasurement);
                 c.start();
             } catch (IOException ex) {
@@ -554,4 +560,28 @@ public class Connection extends Thread {
             System.err.println("Method_ACKTiming_Client along with Report is done!");
         }
     }
+
+    private void RunShellCommandFromJava(String command) {
+
+        try {
+            Process proc = Runtime.getRuntime().exec(command);
+
+            // Read the output
+            BufferedReader reader
+                    = new BufferedReader(new InputStreamReader(proc.getInputStream()));
+
+            String line = "";
+            while ((line = reader.readLine()) != null) {
+                System.out.print(line + "\n");
+            }
+            try {
+                proc.waitFor();
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+    }
+
 }
