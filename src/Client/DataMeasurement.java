@@ -31,11 +31,13 @@ class DataSecond {
 
 public class DataMeasurement {
 
+    protected Vector<Integer> ByteSecondShell_up = null;
+    protected Vector<Integer> ByteSecondShell_down = null;
     protected Vector<DataSecond> SampleReadTime = null;
     protected Vector<DataSecond> SampleWriteTime = null;
     protected Vector<DataSample> SamplesBlock = null;
-    protected Vector<DataSecond> SampleSecond_up = null;
-    protected Vector<DataSecond> SampleSecond_down = null;
+    protected Vector<Integer> SampleSecond_up = null;
+    protected Vector<Integer> SampleSecond_down = null;
     protected Vector<Long> deltaINVector_uplink = null; //Sending time uplink vector 
     protected Vector<Long> deltaOUTVector_uplink = null; //Arrival time uplink vector
     protected Vector<Long> deltaINVector_downlink = null; //Sending time downlink vector
@@ -45,11 +47,13 @@ public class DataMeasurement {
 
     public DataMeasurement() {
         try {
+            ByteSecondShell_up = new Vector<Integer>();
+            ByteSecondShell_down = new Vector<Integer>();
             SampleReadTime = new Vector<DataSecond>();
             SampleWriteTime = new Vector<DataSecond>();
             SamplesBlock = new Vector<DataSample>();
-            SampleSecond_up = new Vector<DataSecond>();
-            SampleSecond_down = new Vector<DataSecond>();
+            SampleSecond_up = new Vector<Integer>();
+            SampleSecond_down = new Vector<Integer>();
             deltaINVector_uplink = new Vector<Long>();
             deltaOUTVector_uplink = new Vector<Long>();
             deltaINVector_downlink = new Vector<Long>();
@@ -70,14 +74,15 @@ public class DataMeasurement {
     public void add_SampleBlock(int MTUsize, long start_time, long end_time) {
         SamplesBlock.add(new DataSample(MTUsize, start_time, end_time));
     }
-    
-    public void add_SampleSecond_up(int _bytes, long _sampleTime) {
-        SampleSecond_up.add(new DataSecond(_bytes, _sampleTime)); 
+
+    public void add_SampleSecond_up(int _bytes) {
+        SampleSecond_up.add(_bytes);
     }
-    public void add_SampleSecond_down(int _bytes, long _sampleTime) {
-        SampleSecond_down.add(new DataSecond(_bytes, _sampleTime)); 
+
+    public void add_SampleSecond_down(int _bytes) {
+        SampleSecond_down.add(_bytes);
     }
-    
+
     public void add_SampleReadTime(int _bytes, long _sampleTime) {
         SampleReadTime.add(new DataSecond(_bytes, _sampleTime));
     }

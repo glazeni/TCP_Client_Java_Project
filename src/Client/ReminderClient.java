@@ -17,11 +17,10 @@ import org.jfree.data.time.Second;
  */
 public class ReminderClient extends Thread {
 
-    public volatile boolean isRunning;
-    public Timer timer = null;
+    private Timer timer = null;
     private DataMeasurement dataMeasurement = null;
     private RTInputStream RTin = null;
-    int i = 0;
+    private int i = 0;
 
     public ReminderClient(int seconds, DataMeasurement _dataMeasurement, RTInputStream _RTin) {
         this.dataMeasurement = _dataMeasurement;
@@ -32,6 +31,10 @@ public class ReminderClient extends Thread {
 
     }
 
+    public void cancelTimer() {
+        timer.cancel();
+    }
+
     class RemindTask extends TimerTask {
 
         public RemindTask() {
@@ -40,10 +43,9 @@ public class ReminderClient extends Thread {
 
         public void run() {
             try {
-                System.err.println("REMINDER CLIENT" + i);
+                dataMeasurement.add_SampleSecond_down(RTin.getBytes());
+                System.out.println("REMINDER CLIENT" + i + " with " + "bytes=" + RTin.getBytes());
                 i++;
-                dataMeasurement.add_SampleSecond_down(RTin.getBytes(), System.currentTimeMillis());
-
             } catch (Exception ex) {
                 ex.printStackTrace();
             } finally {

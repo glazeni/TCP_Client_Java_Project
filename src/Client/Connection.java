@@ -22,20 +22,25 @@ public class Connection extends Thread {
     private DataOutputStream dataOut = null;
     private DataMeasurement dataMeasurement = null;
     private ReminderClient reminderClient = null;
+    private RunShellCommands runShell = null;
     private int byteCnt = 0;
-    private int byteSecond = 0;
+    private boolean isThreadMethod;
     private String METHOD = null;
     private double AvaBW = 0;
     private Vector<Double> AvailableBW = null;
     private TCP_Properties TCP_param = null;
-    private long runningTime = 5000;
+    private long runningTime = 30000;
     private int ID = 0;
+    private boolean isIperfSettings;
+    private boolean isNagleDisable;
 
-    public Connection(int _ID, Socket _s, DataMeasurement _dataMeasurement) {
+    public Connection(int _ID, Socket _s, DataMeasurement _dataMeasurement, boolean _isIperfSettings, boolean _isNagleDisable) {
         try {
             this.ID = _ID;
             this.s = _s;
             this.dataMeasurement = _dataMeasurement;
+            this.isIperfSettings = _isIperfSettings;
+            this.isNagleDisable = _isNagleDisable;
             RTin = new RTInputStream(s.getInputStream());
             RTout = new RTOutputStream(s.getOutputStream());
             dataIn = new DataInputStream(RTin);
@@ -58,18 +63,22 @@ public class Connection extends Thread {
                     Method_PT();
                     break;
                 case "MV_Uplink":
+                    isThreadMethod = true;
                     Method_MV_Uplink_Client();
                     break;
                 case "MV_Downlink":
+                    isThreadMethod = true;
                     Method_MV_Downlink_Client();
                     break;
                 case "MV_Report":
                     Method_MV_Report_Client();
                     break;
                 case "MV_readVectorUP":
+                    isThreadMethod = false;
                     Method_MV_UP_readVector_Client();
                     break;
                 case "MV_readVectorDOWN":
+                    isThreadMethod = false;
                     Method_MV_DOWN_readVector_Client();
                     break;
                 case "MV_Report_readVector":
@@ -143,11 +152,9 @@ public class Connection extends Thread {
             int n = 0;
             System.out.println("\n downlink_Client_rcvInSeconds");
             //Initialize Timer
-            if (METHOD.equalsIgnoreCase("MV_Downlink")) {
+            if (isThreadMethod) {
                 reminderClient = new ReminderClient(1, this.dataMeasurement, this.RTin);
-                reminderClient.start();
             }
-            long now = System.currentTimeMillis();
             while (System.currentTimeMillis() < _end) {
 
                 byteCnt = 0;
@@ -157,22 +164,16 @@ public class Connection extends Thread {
 
                     if (n > 0) {
                         byteCnt += n;
-                        if (METHOD.equalsIgnoreCase("MV_readVectorDOWN")) {
+                        if (!isThreadMethod) {
                             dataMeasurement.add_SampleReadTime(byteCnt, System.currentTimeMillis());
                         }
-//                        byteSecond += n;
-//                        if ((System.currentTimeMillis() >= (now + 1000)) && METHOD.equalsIgnoreCase("MV_readVectorDOWN")) {
-//                            now = System.currentTimeMillis();
-//                            dataMeasurement.add_SampleSecond_down(byteSecond, System.currentTimeMillis());
-//                            byteSecond = 0;
-//                        }
                     } else {
                         System.err.println("Read n<0");
                         break;
                     }
 
                     if (byteCnt < Constants.BLOCKSIZE) {
-                        System.out.println("Read " + n + " bytes");
+                        //System.out.println("Read " + n + " bytes");
                         //Keep reading MTU
                     } else {
                         //MTU is finished
@@ -190,8 +191,8 @@ public class Connection extends Thread {
         } catch (IOException ex) {
             return false;
         } finally {
-            if (METHOD.equalsIgnoreCase("MV_Downlink")) {
-                reminderClient.timer.cancel();
+            if (isThreadMethod) {
+                reminderClient.cancelTimer();
             }
         }
     }
@@ -248,7 +249,8 @@ public class Connection extends Thread {
         //Parameters
         Constants.SOCKET_RCVBUF = 2920;
         Constants.SOCKET_RCVBUF = 2920;
-        Constants.NUMBER_BLOCKS = 100;
+        Constants.BLOCKSIZE = 1460;
+        Constants.NUMBER_BLOCKS = 1000;
         //Measurements
         try {
             //Uplink
@@ -276,7 +278,7 @@ public class Connection extends Thread {
                 dataOut.writeInt(dataMeasurement.deltaINVector_uplink.size());
                 dataOut.flush();
             }
-            //Send Delta Vectors
+            //Send Delta Vectorss
             for (int j = 0; j < dataMeasurement.deltaINVector_uplink.size(); j++) {
                 dataOut.writeLong(dataMeasurement.deltaINVector_uplink.get(j));
                 dataOut.writeLong(dataMeasurement.deltaOUTVector_downlink.get(j));
@@ -285,8 +287,8 @@ public class Connection extends Thread {
         } catch (IOException ex) {
             ex.printStackTrace();
         } finally {
-            String cmd = "iperf3 -p 11008 -i 1 -N -w 14600 -l 1460 -c 193.136.127.218";
-            RunShellCommandFromJava(cmd);
+//            String cmd = "iperf3 -p 11008 -i 1 -N -w 14600 -l 1460 -c 193.136.127.218";
+//            RunShellCommandFromJava(cmd);
             System.err.println("Method_PGM along with Report is done!");
         }
 
@@ -294,30 +296,30 @@ public class Connection extends Thread {
 
     private void Method_PT() {
         //Parameters
-        Constants.SOCKET_RCVBUF = 14600;
-        Constants.SOCKET_RCVBUF = 14600;
-        Constants.NUMBER_BLOCKS = 10;
+        Constants.SOCKET_RCVBUF = 146000;
+        Constants.SOCKET_RCVBUF = 146000;
+        Constants.BLOCKSIZE = 14600;
+        Constants.NUMBER_BLOCKS = 1;
 
         //Measurements
         try {
             //Uplink
             dataIn.readByte();
-            for (int p = 0; p < 10; p++) {
+            for (int p = 0; p < 1; p++) {
                 uplink_Client_snd();
             }
-            //Downlink
-            AvailableBW.clear();
-            dataIn.readByte();
-            for (int p = 0; p < 10; p++) {
-                downlink_Client_rcv();
-                AvailableBW.add(PacketTrain());
-            }
+//            //Downlink
+//            AvailableBW.clear();
+//            dataIn.readByte();
+//            for (int p = 0; p < 10; p++) {
+//                downlink_Client_rcv();
+//                AvailableBW.add(PacketTrain());
+//            }
         } catch (IOException ex) {
             ex.printStackTrace();
         }
         //Report Measurements - AvailableBW_down Vector
         try {
-            AvailableBW.clear();
             dataOut.writeByte(2);
             dataOut.writeInt(AvailableBW.size());
             for (int k = 0; k < AvailableBW.size(); k++) {
@@ -327,8 +329,8 @@ public class Connection extends Thread {
         } catch (IOException ex) {
             ex.printStackTrace();
         } finally {
-            String cmd = "iperf3 -p 11008 -i 1 -N -w 14600 -l 1460 -c 193.136.127.218";
-            RunShellCommandFromJava(cmd);
+//            String cmd = "iperf3 -p 11008 -i 1 -N -w 14600 -l 1460 -c 193.136.127.218";
+//            RunShellCommandFromJava(cmd);
             System.err.println("Method_PT along with report is done!");
         }
 
@@ -336,26 +338,46 @@ public class Connection extends Thread {
 
     private void Method_MV_Uplink_Client() {
         //Parameters
-        Constants.SOCKET_RCVBUF = 14600;
-        Constants.SOCKET_RCVBUF = 14600;
+        if (isIperfSettings) {
+            Constants.SOCKET_RCVBUF = 64000;
+            Constants.SOCKET_RCVBUF = 64000;
+            Constants.BLOCKSIZE = 8000;
+        } else {
+            Constants.SOCKET_RCVBUF = 14600;
+            Constants.SOCKET_RCVBUF = 14600;
+            Constants.BLOCKSIZE = 1460;
+        }
 
         //Measurements
+        dataMeasurement.ByteSecondShell_up.clear();
         try {
             //Uplink
             dataIn.readByte();
+            //Run Iperf
+            if (isIperfSettings && isNagleDisable) {
+                String cmd = "iperf3 -p 11010 -t 30 -i 1 -M -N -w 64000 -l 8000 -c 193.136.127.218";
+                runShell = new RunShellCommands(this.dataMeasurement, cmd);
+            } else if (isIperfSettings && !isNagleDisable) {
+                String cmd = "iperf3 -p 11010 -t 30 -i 1 -M -w 64000 -l 8000 -c 193.136.127.218";
+                runShell = new RunShellCommands(this.dataMeasurement, cmd);
+            } else if (!isIperfSettings && !isNagleDisable) {
+                String cmd = "iperf3 -p 11010 -t 30 -i 1 -M -w 14600 -l 1460 -c 193.136.127.218";
+                runShell = new RunShellCommands(this.dataMeasurement, cmd);
+            } else if (!isIperfSettings && isNagleDisable) {
+                String cmd = "iperf3 -p 11010 -t 30 -i 1 -M -N -w 14600 -l 1460 -c 193.136.127.218";
+                runShell = new RunShellCommands(this.dataMeasurement, cmd);
+            }
             uplink_Client_sndInSeconds();
         } catch (IOException ex) {
             ex.printStackTrace();
         } finally {
             try {
-                //Socket + Connection Downlink
+                //Create new ClientThread for Downlink
                 s_down = new Socket(Constants.SERVER_IP, Constants.SERVERPORT);
-                TCP_param = new TCP_Properties(s_down);
+                TCP_param = new TCP_Properties(s_down, isNagleDisable);
                 dataOut = new DataOutputStream(s_down.getOutputStream());
                 dataOut.writeInt(this.ID);
-                String cmd = "iperf3 -p 11008 -i 1 -N -w 14600 -l 1460 -c 193.136.127.218";
-                RunShellCommandFromJava(cmd);
-                Thread c = new Connection(this.ID, s_down, this.dataMeasurement);
+                Thread c = new Connection(this.ID, s_down, this.dataMeasurement, isIperfSettings, isNagleDisable);
                 c.start();
             } catch (IOException ex) {
                 ex.printStackTrace();
@@ -366,28 +388,48 @@ public class Connection extends Thread {
 
     private void Method_MV_Downlink_Client() {
         //Parameters
-        Constants.SOCKET_RCVBUF = 14600;
-        Constants.SOCKET_RCVBUF = 14600;
+        if (isIperfSettings) {
+            Constants.SOCKET_RCVBUF = 64000;
+            Constants.SOCKET_RCVBUF = 64000;
+            Constants.BLOCKSIZE = 8000;
+        } else {
+            Constants.SOCKET_RCVBUF = 14600;
+            Constants.SOCKET_RCVBUF = 14600;
+            Constants.BLOCKSIZE = 1460;
+        }
 
         //Measurements
         dataMeasurement.SampleSecond_down.clear();
+        dataMeasurement.ByteSecondShell_down.clear();
         try {
             //Downlink
             dataIn.readByte();
+            //Run Iperf
+            if (isIperfSettings && isNagleDisable) {
+                String cmd = "iperf3 -p 11010 -t 30 -i 1 -M -N -w 64000 -l 8000 -c 193.136.127.218 -R";
+                runShell = new RunShellCommands(this.dataMeasurement, cmd);
+            } else if (isIperfSettings && !isNagleDisable) {
+                String cmd = "iperf3 -p 11010 -t 30 -i 1 -M -w 64000 -l 8000 -c 193.136.127.218 -R";
+                runShell = new RunShellCommands(this.dataMeasurement, cmd);
+            } else if (!isIperfSettings && !isNagleDisable) {
+                String cmd = "iperf3 -p 11010 -t 30 -i 1 -M -w 14600 -l 1460 -c 193.136.127.218 -R";
+                runShell = new RunShellCommands(this.dataMeasurement, cmd);
+            } else if (!isIperfSettings && isNagleDisable) {
+                String cmd = "iperf3 -p 11010 -t 30 -i 1 -M -N -w 14600 -l 1460 -c 193.136.127.218 -R";
+                runShell = new RunShellCommands(this.dataMeasurement, cmd);
+            }
             long end = System.currentTimeMillis() + runningTime;
             downlink_Client_rcvInSeconds(end);
         } catch (IOException ex) {
             ex.printStackTrace();
         } finally {
             try {
-                //Socket + Connection Report
+                //Create new ClientThread for Report
                 s_report = new Socket(Constants.SERVER_IP, Constants.SERVERPORT);
-                TCP_param = new TCP_Properties(s_report);
+                TCP_param = new TCP_Properties(s_report, isNagleDisable);
                 dataOut = new DataOutputStream(s_report.getOutputStream());
                 dataOut.writeInt(this.ID);
-                String cmd = "iperf3 -p 11008 -i 1 -N -w 14600 -l 1460 -c 193.136.127.218";
-                RunShellCommandFromJava(cmd);
-                Thread c = new Connection(this.ID, s_report, this.dataMeasurement);
+                Thread c = new Connection(this.ID, s_report, this.dataMeasurement, isIperfSettings, isNagleDisable);
                 c.start();
             } catch (IOException ex) {
                 ex.printStackTrace();
@@ -398,42 +440,71 @@ public class Connection extends Thread {
     private void Method_MV_Report_Client() {
         //Report 1secBytes Vector, sending size first 
         try {
+            //Report MV_Downlink 
             dataOut.writeByte(3);
             dataOut.writeInt(dataMeasurement.SampleSecond_down.size());
             for (int k = 0; k < dataMeasurement.SampleSecond_down.size(); k++) {
-                dataOut.writeInt(dataMeasurement.SampleSecond_down.get(k).bytesRead);
+                dataOut.writeInt(dataMeasurement.SampleSecond_down.get(k));
                 dataOut.flush();
-                dataOut.writeLong(dataMeasurement.SampleSecond_down.get(k).sampleTime);
-                dataOut.flush();
+            }
+            //Report Shell Vector from terminal Uplink
+            dataOut.writeInt(dataMeasurement.ByteSecondShell_up.size());
+            for(int b=0; b<dataMeasurement.ByteSecondShell_up.size(); b++){
+                dataOut.writeInt(dataMeasurement.ByteSecondShell_up.get(b));
+            }
+            //Report Shell Vector from terminal Downlink
+            dataOut.writeInt(dataMeasurement.ByteSecondShell_down.size());
+            for(int b=0; b<dataMeasurement.ByteSecondShell_down.size(); b++){
+                dataOut.writeInt(dataMeasurement.ByteSecondShell_down.get(b));
             }
         } catch (IOException ex) {
             ex.printStackTrace();
         } finally {
-            dataMeasurement.SampleSecond_down.clear();
             System.err.println("Method_MV_Client along with Report is done!");
         }
     }
 
     private void Method_MV_UP_readVector_Client() {
         //Parameters
-        Constants.SOCKET_RCVBUF = 14600;
-        Constants.SOCKET_RCVBUF = 14600;
+        if (isIperfSettings) {
+            Constants.SOCKET_RCVBUF = 64000;
+            Constants.SOCKET_RCVBUF = 64000;
+            Constants.BLOCKSIZE = 8000;
+        } else {
+            Constants.SOCKET_RCVBUF = 14600;
+            Constants.SOCKET_RCVBUF = 14600;
+            Constants.BLOCKSIZE = 1460;
+        }
 
         //Measurements
         try {
             //Uplink
             dataIn.readByte();
+            //Run Iperf
+            if (isIperfSettings && isNagleDisable) {
+                String cmd = "iperf3 -p 11010 -t 30 -i 1 -M -N -w 64000 -l 8000 -c 193.136.127.218";
+                runShell = new RunShellCommands(this.dataMeasurement, cmd);
+            } else if (isIperfSettings && !isNagleDisable) {
+                String cmd = "iperf3 -p 11010 -t 30 -i 1 -M -w 64000 -l 8000 -c 193.136.127.218";
+                runShell = new RunShellCommands(this.dataMeasurement, cmd);
+            } else if (!isIperfSettings && !isNagleDisable) {
+                String cmd = "iperf3 -p 11010 -t 30 -i 1 -M -w 14600 -l 1460 -c 193.136.127.218";
+                runShell = new RunShellCommands(this.dataMeasurement, cmd);
+            } else if (!isIperfSettings && isNagleDisable) {
+                String cmd = "iperf3 -p 11010 -t 30 -i 1 -M -N -w 14600 -l 1460 -c 193.136.127.218";
+                runShell = new RunShellCommands(this.dataMeasurement, cmd);
+            }
             uplink_Client_sndInSeconds();
         } catch (IOException ex) {
             ex.printStackTrace();
         } finally {
             try {
-                //Socket + Connection Downlink
+                //Create new ClientThread for Downlink
                 s_down = new Socket(Constants.SERVER_IP, Constants.SERVERPORT);
-                TCP_param = new TCP_Properties(s_down);
+                TCP_param = new TCP_Properties(s_down, isNagleDisable);
                 dataOut = new DataOutputStream(s_down.getOutputStream());
                 dataOut.writeInt(this.ID);
-                Thread c = new Connection(this.ID, s_down, this.dataMeasurement);
+                Thread c = new Connection(this.ID, s_down, this.dataMeasurement, isIperfSettings, isNagleDisable);
                 c.start();
             } catch (IOException ex) {
                 ex.printStackTrace();
@@ -443,26 +514,47 @@ public class Connection extends Thread {
 
     private void Method_MV_DOWN_readVector_Client() {
         //Parameters
-        Constants.SOCKET_RCVBUF = 14600;
-        Constants.SOCKET_RCVBUF = 14600;
+        if (isIperfSettings) {
+            Constants.SOCKET_RCVBUF = 64000;
+            Constants.SOCKET_RCVBUF = 64000;
+            Constants.BLOCKSIZE = 8000;
+        } else {
+            Constants.SOCKET_RCVBUF = 14600;
+            Constants.SOCKET_RCVBUF = 14600;
+            Constants.BLOCKSIZE = 1460;
+        }
 
         //Measurements
-        dataMeasurement.SampleSecond_down.clear();
+        dataMeasurement.SampleReadTime.clear();
         try {
             //Downlink
             dataIn.readByte();
+            //Run Iperf
+            if (isIperfSettings && isNagleDisable) {
+                String cmd = "iperf3 -p 11010 -t 30 -i 1 -M -N -w 64000 -l 8000 -c 193.136.127.218 -R";
+                runShell = new RunShellCommands(this.dataMeasurement, cmd);
+            } else if (isIperfSettings && !isNagleDisable) {
+                String cmd = "iperf3 -p 11010 -t 30 -i 1 -M -w 64000 -l 8000 -c 193.136.127.218 -R";
+                runShell = new RunShellCommands(this.dataMeasurement, cmd);
+            } else if (!isIperfSettings && !isNagleDisable) {
+                String cmd = "iperf3 -p 11010 -t 30 -i 1 -M -w 14600 -l 1460 -c 193.136.127.218 -R";
+                runShell = new RunShellCommands(this.dataMeasurement, cmd);
+            } else if (!isIperfSettings && isNagleDisable) {
+                String cmd = "iperf3 -p 11010 -t 30 -i 1 -M -N -w 14600 -l 1460 -c 193.136.127.218 -R";
+                runShell = new RunShellCommands(this.dataMeasurement, cmd);
+            }
             long end = System.currentTimeMillis() + runningTime;
             downlink_Client_rcvInSeconds(end);
         } catch (IOException ex) {
             ex.printStackTrace();
         } finally {
             try {
-                //Socket + Connection Report
+                //Create new ClientThread for Report
                 s_report = new Socket(Constants.SERVER_IP, Constants.SERVERPORT);
-                TCP_param = new TCP_Properties(s_report);
+                TCP_param = new TCP_Properties(s_report, isNagleDisable);
                 dataOut = new DataOutputStream(s_report.getOutputStream());
                 dataOut.writeInt(this.ID);
-                Thread c = new Connection(this.ID, s_report, this.dataMeasurement);
+                Thread c = new Connection(this.ID, s_report, this.dataMeasurement, isIperfSettings, isNagleDisable);
                 c.start();
             } catch (IOException ex) {
                 ex.printStackTrace();
@@ -474,25 +566,31 @@ public class Connection extends Thread {
         //Report 1secBytes Vector, sending size first 
         try {
             dataOut.writeByte(3);
-            dataOut.writeInt(dataMeasurement.SampleSecond_down.size());
-            for (int k = 0; k < dataMeasurement.SampleSecond_down.size(); k++) {
-                dataOut.writeInt(dataMeasurement.SampleSecond_down.get(k).bytesRead);
+            dataOut.writeInt(dataMeasurement.SampleReadTime.size());
+            for (int k = 0; k < dataMeasurement.SampleReadTime.size(); k++) {
+                dataOut.writeInt(dataMeasurement.SampleReadTime.get(k).bytesRead);
                 dataOut.flush();
-                dataOut.writeLong(dataMeasurement.SampleSecond_down.get(k).sampleTime);
+                dataOut.writeLong(dataMeasurement.SampleReadTime.get(k).sampleTime);
                 dataOut.flush();
             }
         } catch (IOException ex) {
             ex.printStackTrace();
         } finally {
-            dataMeasurement.SampleSecond_down.clear();
             System.err.println("Method_MV_readVector_Client along with Report is done!");
         }
     }
 
     private void Method_ACKTimingUP_Client() {
         //Parameters
-        Constants.SOCKET_RCVBUF = 14600;
-        Constants.SOCKET_RCVBUF = 14600;
+        if (isIperfSettings) {
+            Constants.SOCKET_RCVBUF = 64000;
+            Constants.SOCKET_RCVBUF = 64000;
+            Constants.BLOCKSIZE = 8000;
+        } else {
+            Constants.SOCKET_RCVBUF = 14600;
+            Constants.SOCKET_RCVBUF = 14600;
+            Constants.BLOCKSIZE = 1460;
+        }
 
         //Measurements
         try {
@@ -505,10 +603,10 @@ public class Connection extends Thread {
             try {
                 //Socket + Connection Downlink
                 s_down = new Socket(Constants.SERVER_IP, Constants.SERVERPORT);
-                TCP_param = new TCP_Properties(s_down);
+                TCP_param = new TCP_Properties(s_down, isNagleDisable);
                 dataOut = new DataOutputStream(s_down.getOutputStream());
                 dataOut.writeInt(this.ID);
-                Thread c = new Connection(this.ID, s_down, this.dataMeasurement);
+                Thread c = new Connection(this.ID, s_down, this.dataMeasurement, isIperfSettings, isNagleDisable);
                 c.start();
             } catch (IOException ex) {
                 ex.printStackTrace();
@@ -518,8 +616,15 @@ public class Connection extends Thread {
 
     private void Method_ACKTimingDOWN_Client() {
         //Parameters
-        Constants.SOCKET_RCVBUF = 14600;
-        Constants.SOCKET_RCVBUF = 14600;
+        if (isIperfSettings) {
+            Constants.SOCKET_RCVBUF = 64000;
+            Constants.SOCKET_RCVBUF = 64000;
+            Constants.BLOCKSIZE = 8000;
+        } else {
+            Constants.SOCKET_RCVBUF = 14600;
+            Constants.SOCKET_RCVBUF = 14600;
+            Constants.BLOCKSIZE = 1460;
+        }
 
         //Measurements
         try {
@@ -533,10 +638,10 @@ public class Connection extends Thread {
             try {
                 //Socket + Connection Report
                 s_report = new Socket(Constants.SERVER_IP, Constants.SERVERPORT);
-                TCP_param = new TCP_Properties(s_report);
+                TCP_param = new TCP_Properties(s_report, isNagleDisable);
                 dataOut = new DataOutputStream(s_report.getOutputStream());
                 dataOut.writeInt(this.ID);
-                Thread c = new Connection(this.ID, s_report, this.dataMeasurement);
+                Thread c = new Connection(this.ID, s_report, this.dataMeasurement, isIperfSettings, isNagleDisable);
                 c.start();
             } catch (IOException ex) {
                 ex.printStackTrace();
@@ -560,28 +665,4 @@ public class Connection extends Thread {
             System.err.println("Method_ACKTiming_Client along with Report is done!");
         }
     }
-
-    private void RunShellCommandFromJava(String command) {
-
-        try {
-            Process proc = Runtime.getRuntime().exec(command);
-
-            // Read the output
-            BufferedReader reader
-                    = new BufferedReader(new InputStreamReader(proc.getInputStream()));
-
-            String line = "";
-            while ((line = reader.readLine()) != null) {
-                System.out.print(line + "\n");
-            }
-            try {
-                proc.waitFor();
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
-    }
-
 }
