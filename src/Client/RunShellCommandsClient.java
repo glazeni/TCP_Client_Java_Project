@@ -8,13 +8,13 @@ package Client;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.Vector;
+import java.util.concurrent.CountDownLatch;
 
 /**
  *
  * @author glazen
  */
-public class RunShellCommands extends Thread {
+public class RunShellCommandsClient extends Thread {
 
     private String cmd = null;
     private BufferedReader buffReader = null;
@@ -23,25 +23,21 @@ public class RunShellCommands extends Thread {
     private String part1 = null;
     private String part2 = null;
     private DataMeasurement dataMeasurement = null;
-    private int ID = 0;
     private int multiplier = 0;
-    private boolean isUplink;
+    private boolean isUplinkTest;
+    private CountDownLatch latch=null;
 
-    public RunShellCommands(DataMeasurement _dataMeasurement, String _cmd) {
+    public RunShellCommandsClient(DataMeasurement _dataMeasurement, String _cmd, CountDownLatch _latch, boolean _isUplinkTest) {
         this.dataMeasurement = _dataMeasurement;
         this.cmd = _cmd;
-        this.start();
+        this.latch = _latch;
+        this.isUplinkTest = _isUplinkTest;
     }
 
     @Override
     public void run() {
         try {
-            if(cmd.contains("-R")){
-                isUplink = false;
-            }else{
-                isUplink = true;
-            }
-            
+
             Process proc = Runtime.getRuntime().exec(cmd);
 
             // Read the output
@@ -68,15 +64,15 @@ public class RunShellCommands extends Thread {
                     }
                     part2 = parts[1].substring(0, parts[1].length() - 6);
                     int value = (int) Math.round(Float.parseFloat(part2) * multiplier);
-                    if(isUplink){
+                    if (isUplinkTest) {
                         dataMeasurement.ByteSecondShell_up.add(value);
-                    }else{
+                    } else {
                         dataMeasurement.ByteSecondShell_down.add(value);
                     }
-                    
                     System.out.print("Value " + value + "\n");
                 }
             }
+            latch.countDown();
             try {
                 proc.waitFor();
             } catch (Exception ex) {
@@ -86,13 +82,5 @@ public class RunShellCommands extends Thread {
             ex.printStackTrace();
         }
 
-    }
-
-    public Vector<Integer> getByteSecondShellVector_up() {
-        return dataMeasurement.ByteSecondShell_up;
-    }
-    
-    public Vector<Integer> getByteSecondShellVector_down() {
-        return dataMeasurement.ByteSecondShell_down;
     }
 }

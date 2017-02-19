@@ -18,9 +18,6 @@ public class TCPClient extends Thread {
 
     public TCPClient() {
         try {
-            //isIperfSettings = true; //true - Iperf Settings; false - Thesis Settings
-            //isNagleDisable = false; //true - Enable Nagle's Algorithm; false - Disable Nagle's Algorithm
-
             //Data Measurement
             dataMeasurement = new DataMeasurement();
             //Socket Uplink + Connection
@@ -52,10 +49,5 @@ public class TCPClient extends Thread {
         } catch (Exception ex) {
             System.err.println("Client connection error: " + ex.getMessage());
         }
-    }
-    
-    public static void main(String[] args) {
-        TCPClient tcpClient = new TCPClient();
-        tcpClient.start();
     }
 }
