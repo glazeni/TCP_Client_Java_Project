@@ -35,8 +35,8 @@ public class TCPClient extends Thread {
             isIperfSettings = dis.readBoolean();
             isNagleDisable = dis.readBoolean();
             
-            System.err.println("IPERFSETTINGS: " + isIperfSettings);
-            System.err.println("ISNAGLESDISABLE: " + isNagleDisable);
+            System.err.println("IperfSettings: " + isIperfSettings);
+            System.err.println("IsNagleDisable: " + isNagleDisable);
             connection = new Connection(ID, s_up, dataMeasurement, isIperfSettings, isNagleDisable);
 
         } catch (Exception ex) {
