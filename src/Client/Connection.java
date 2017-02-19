@@ -457,12 +457,12 @@ public class Connection extends Thread {
             }
             //Report Shell Vector from terminal Uplink
             dataOut.writeInt(dataMeasurement.ByteSecondShell_up.size());
-            for(int b=0; b<dataMeasurement.ByteSecondShell_up.size(); b++){
+            for (int b = 0; b < dataMeasurement.ByteSecondShell_up.size(); b++) {
                 dataOut.writeInt(dataMeasurement.ByteSecondShell_up.get(b));
             }
             //Report Shell Vector from terminal Downlink
             dataOut.writeInt(dataMeasurement.ByteSecondShell_down.size());
-            for(int b=0; b<dataMeasurement.ByteSecondShell_down.size(); b++){
+            for (int b = 0; b < dataMeasurement.ByteSecondShell_down.size(); b++) {
                 dataOut.writeInt(dataMeasurement.ByteSecondShell_down.get(b));
             }
         } catch (IOException ex) {
@@ -582,12 +582,23 @@ public class Connection extends Thread {
         //Report 1secBytes Vector, sending size first 
         try {
             dataOut.writeByte(3);
+            //Report MV_readVector_Downlink
             dataOut.writeInt(dataMeasurement.SampleReadTime.size());
             for (int k = 0; k < dataMeasurement.SampleReadTime.size(); k++) {
                 dataOut.writeInt(dataMeasurement.SampleReadTime.get(k).bytesRead);
                 dataOut.flush();
                 dataOut.writeLong(dataMeasurement.SampleReadTime.get(k).sampleTime);
                 dataOut.flush();
+            }
+            //Report Shell Vector from terminal Uplink
+            dataOut.writeInt(dataMeasurement.ByteSecondShell_up.size());
+            for (int b = 0; b < dataMeasurement.ByteSecondShell_up.size(); b++) {
+                dataOut.writeInt(dataMeasurement.ByteSecondShell_up.get(b));
+            }
+            //Report Shell Vector from terminal Downlink
+            dataOut.writeInt(dataMeasurement.ByteSecondShell_down.size());
+            for (int b = 0; b < dataMeasurement.ByteSecondShell_down.size(); b++) {
+                dataOut.writeInt(dataMeasurement.ByteSecondShell_down.get(b));
             }
         } catch (IOException ex) {
             ex.printStackTrace();
