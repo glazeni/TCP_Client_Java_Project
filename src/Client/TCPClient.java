@@ -50,4 +50,8 @@ public class TCPClient extends Thread {
             System.err.println("Client connection error: " + ex.getMessage());
         }
     }
+    public static void main(String[] args) {
+        TCPClient tcpClient = new TCPClient();
+        tcpClient.start();
+    }
 }

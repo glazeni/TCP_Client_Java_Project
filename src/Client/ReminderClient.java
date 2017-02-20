@@ -41,6 +41,7 @@ public class ReminderClient extends Thread {
             //Do nothihng in constructor
         }
 
+        @Override
         public void run() {
             try {
                 dataMeasurement.add_SampleSecond_down(RTin.getBytes());
