@@ -44,8 +44,8 @@ public class ReminderClient extends Thread {
         @Override
         public void run() {
             try {
-                dataMeasurement.add_SampleSecond_down(RTin.getBytes());
-                System.out.println("REMINDER CLIENT" + i + " with " + "bytes=" + RTin.getBytes());
+                dataMeasurement.add_SampleSecond_down(RTin.getBytes2Bits());
+                System.out.println("REMINDER CLIENT" + i + " with " + "bits=" + RTin.getBytes2Bits());
                 i++;
             } catch (Exception ex) {
                 ex.printStackTrace();

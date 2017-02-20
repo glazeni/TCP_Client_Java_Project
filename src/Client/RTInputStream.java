@@ -50,6 +50,10 @@ public class RTInputStream extends FilterInputStream {
         return bytesTotal;
     }
     
+    public int getBytes2Bits(){
+        return bytesTotal*8;
+    }
+    
     public void clearBytes(){
         bytesTotal=0;
     }
