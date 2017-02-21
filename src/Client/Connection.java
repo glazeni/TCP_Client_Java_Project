@@ -327,7 +327,7 @@ public class Connection extends Thread {
             AvailableBW.clear();
             dataIn.readByte();
             for (int p = 0; p < 10; p++) {
-                dataIn.readByte();
+                dataOut.writeByte(2);
                 downlink_Client_rcv();
                 AvailableBW.add(PacketTrain());
                 if (isNagleDisable) {
