@@ -47,8 +47,7 @@ public class RunShellCommandsClient {
                 part1 = line.replaceAll("\\s+", "");
                 if (part1.contains("sec")) {
                     parts = part1.split("sec");
-                    parts = parts[1].split("Bytes");
-                    part2 = parts[1].substring(0, parts[1].length() - 5);
+                    part2 = parts[1].substring(0, parts[1].length() - 15);
                     if (part2.contains("G")) {
                         multiplier = 1000000000;
                     } else if (part2.contains("M")) {
@@ -58,7 +57,7 @@ public class RunShellCommandsClient {
                     } else {
                         multiplier = 1;
                     }
-                    part2 = parts[1].substring(0, parts[1].length() - 6);
+                    part2 = parts[1].substring(0, parts[1].length() - 16);
                     int value = (int) Math.round(Float.parseFloat(part2) * multiplier);
                     if (isUplinkTest) {
                         dataMeasurement.ByteSecondShell_up.add(value);

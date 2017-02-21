@@ -331,11 +331,11 @@ public class Connection extends Thread {
                 downlink_Client_rcv();
                 AvailableBW.add(PacketTrain());
                 if (isNagleDisable) {
-                    String cmd = "iperf3 -p 11008 -M -N -n 1 -w 146000 -l 146000 -c 193.136.127.218 -R";
+                    String cmd = "iperf3 -p 11010 -M -N -n 1 -w 146000 -l 146000 -c 193.136.127.218 -R";
                     runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, false);
                     runShell.run();
                 } else {
-                    String cmd = "iperf3 -p 11008 -M -n 1 -w 146000 -l 146000 -c 193.136.127.218 -R";
+                    String cmd = "iperf3 -p 11010 -M -n 1 -w 146000 -l 146000 -c 193.136.127.218 -R";
                     runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, false);
                     runShell.run();
                 }
