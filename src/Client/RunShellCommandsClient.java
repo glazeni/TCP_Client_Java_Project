@@ -47,18 +47,19 @@ public class RunShellCommandsClient {
                 part1 = line.replaceAll("\\s+", "");
                 if (part1.contains("sec")) {
                     parts = part1.split("sec");
-                    part2 = parts[1].substring(0, parts[1].length() - 15);
+                    parts = parts[1].split("Bytes");
+                    part2 = parts[0].substring(0, parts[0].length());
                     if (part2.contains("G")) {
-                        multiplier = 1000000000;
+                        multiplier = 1024*1024*1024;
                     } else if (part2.contains("M")) {
-                        multiplier = 1000000;
+                        multiplier = 1024*1024;
                     } else if (part2.contains("K")) {
-                        multiplier = 1000;
+                        multiplier = 1024;
                     } else {
                         multiplier = 1;
                     }
-                    part2 = parts[1].substring(0, parts[1].length() - 16);
-                    int value = (int) Math.round(Float.parseFloat(part2) * multiplier);
+                    part2 = parts[0].substring(0, parts[0].length() - 1);
+                    int value = (int) Math.round(Float.parseFloat(part2) * multiplier)*8;
                     if (isUplinkTest) {
                         dataMeasurement.ByteSecondShell_up.add(value);
                     } else {
