@@ -204,8 +204,8 @@ public class Connection extends Thread {
             byte[] rcv_buf = new byte[Constants.BLOCKSIZE];
             int num_blocks = 0, n = 0;
             boolean isFirstPacket = true;
-            System.out.println("\n downlink_Client_rcv with " + "Number Blocks=" + num_blocks);
             num_blocks = dataIn.readInt();
+            System.out.println("\n downlink_Client_rcv with " + "Number Blocks=" + num_blocks);
             for (int i = 0; i < num_blocks; i++) {
                 byteCnt = 0;
                 //Cycle to read each block
@@ -314,11 +314,11 @@ public class Connection extends Thread {
                 dataIn.readByte();
                 uplink_Client_snd();
                 if (isNagleDisable) {
-                    String cmd = "iperf3 -p 11008 -M -N -n 1 -w 146000 -l 146000 -c 193.136.127.218";
+                    String cmd = "iperf3 -p 11010 -M -N -n 1 -w 146000 -l 146000 -c 193.136.127.218";
                     runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
                     runShell.run();
                 } else {
-                    String cmd = "iperf3 -p 11008 -M -n 1 -w 146000 -l 146000 -c 193.136.127.218";
+                    String cmd = "iperf3 -p 11010 -M -n 1 -w 146000 -l 146000 -c 193.136.127.218";
                     runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
                     runShell.run();
                 }
@@ -327,6 +327,7 @@ public class Connection extends Thread {
             AvailableBW.clear();
             dataIn.readByte();
             for (int p = 0; p < 10; p++) {
+                dataIn.readByte();
                 downlink_Client_rcv();
                 AvailableBW.add(PacketTrain());
                 if (isNagleDisable) {
