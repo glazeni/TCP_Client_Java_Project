@@ -3,11 +3,9 @@
  */
 package Client;
 
-import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.Socket;
 import java.util.Vector;
 
@@ -29,10 +27,12 @@ public class Connection extends Thread {
     private double AvaBW = 0;
     private Vector<Double> AvailableBW = null;
     private TCP_Properties TCP_param = null;
-    private long runningTime = 5000;
+    private long runningTime = 35000;
     private int ID = 0;
     private boolean isIperfSettings;
     private boolean isNagleDisable;
+    private long firstPacket = 0;
+    private long lastPacket = 0;
 
     public Connection(int _ID, Socket _s, DataMeasurement _dataMeasurement, boolean _isIperfSettings, boolean _isNagleDisable) {
         try {
@@ -202,9 +202,9 @@ public class Connection extends Thread {
         try {
             byte[] rcv_buf = new byte[Constants.BLOCKSIZE];
             int num_blocks = 0, n = 0;
-            num_blocks = dataIn.readInt();
+            boolean isFirstPacket = true;
             System.out.println("\n downlink_Client_rcv with " + "Number Blocks=" + num_blocks);
-
+            num_blocks = dataIn.readInt();
             for (int i = 0; i < num_blocks; i++) {
                 byteCnt = 0;
                 //Cycle to read each block
@@ -213,6 +213,11 @@ public class Connection extends Thread {
 
                     if (n > 0) {
                         byteCnt += n;
+                        if (byteCnt >= 1460 && isFirstPacket) {
+                            firstPacket = System.currentTimeMillis();
+                            isFirstPacket = false;
+                            System.out.println("First Packet: " + firstPacket);
+                        }
                     }
 
                     if (byteCnt < Constants.BLOCKSIZE) {
@@ -223,7 +228,7 @@ public class Connection extends Thread {
                         break;
                     }
                 } while ((n > 0) && (byteCnt < Constants.BLOCKSIZE));
-
+                lastPacket = System.currentTimeMillis();
                 if (n == -1) {
                     System.out.println("Exited with n=-1");
                     break;
@@ -236,13 +241,12 @@ public class Connection extends Thread {
 
     private double PacketTrain() {
         AvaBW = 0;
-        int length = RTin.readTimeVector.size() - 1;
-        double deltaN = RTin.readTimeVector.get(length) - RTin.readTimeVector.get(0);
-        int N = Constants.NUMBER_BLOCKS;
+        double deltaN = lastPacket - firstPacket;
+        int N = Constants.SOCKET_RCVBUF / 1460;
         int L = Constants.BLOCKSIZE;
         AvaBW = (((N - 1) * L) / deltaN);
         System.err.println("AvaBW: " + AvaBW);
-        System.out.println("PTprocess is DONE");
+        System.out.println("PTprocess is DONE!");
         return AvaBW;
     }
 
