@@ -217,7 +217,6 @@ public class Connection extends Thread {
                         if (byteCnt >= 1460 && isFirstPacket) {
                             firstPacket = System.currentTimeMillis();
                             isFirstPacket = false;
-                            System.out.println("First Packet: " + firstPacket);
                         }
                     }
 
@@ -225,7 +224,6 @@ public class Connection extends Thread {
                         //Keep reading MTU
                     } else {
                         RTin.readTimeVector.add(System.currentTimeMillis());
-                        System.out.println("Reach the end of the block " + i + " with " + n + " bytes read & byteCount=" + byteCnt);
                         break;
                     }
                 } while ((n > 0) && (byteCnt < Constants.BLOCKSIZE));
