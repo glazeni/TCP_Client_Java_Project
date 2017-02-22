@@ -592,7 +592,7 @@ public class ServerUI extends javax.swing.JFrame implements ActionListener {
         try {
             //CLIENT MODE
             if (jRadioClientButton.isSelected()) {
-                tcpClient = new TCPClient();
+                tcpClient = new TCPClient(isIperfSettings,isNagleDisable);
                 tcpClient.start();
             } else {
                 //SERVER MODE
