@@ -5,8 +5,6 @@ package GUI;
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-
-
 import Client.Connection;
 import Client.Constants;
 import Client.DataMeasurement;
@@ -49,21 +47,16 @@ import org.jfree.data.xy.XYDataset;
  */
 public class ServerUI extends javax.swing.JFrame implements ActionListener {
 
-    InetAddress addr = null;
-    TCPClient tcpClient = null;
-    public static volatile boolean isTCPservDone;
-    public static volatile boolean isUplinkDone;
-    public static volatile boolean isDownlinkDone;
-    public static DataMeasurement Measurement = null;
-    public static TimeSeries series = null;
-    private static double lastValue = 100.0;
-    private static int connNumber = 0;
+    private InetAddress addr = null;
+    private TCPClient tcpClient = null;
+    private static TimeSeries series = null;
     //Timer to refresh graph after every second
-    public static javax.swing.Timer timer = null;
+    private static javax.swing.Timer timer = null;
+    private boolean isNagleDisable;
+    private boolean isIperfSettings;
 
     public ServerUI() {
         initComponents();
-        Measurement = new DataMeasurement();
         timer = new javax.swing.Timer(1000, this);
         setInterfaceEnable(false);
         DynamicLineAndTimeSeriesChart("Data Measurement");
@@ -93,22 +86,23 @@ public class ServerUI extends javax.swing.JFrame implements ActionListener {
         jBeginMeasurement = new javax.swing.JButton();
         jGraphPanel = new javax.swing.JPanel();
         jTCPpanel = new javax.swing.JPanel();
-        jSpinner2 = new javax.swing.JSpinner();
         jSpinner3 = new javax.swing.JSpinner();
+        jSpinner4 = new javax.swing.JSpinner();
         jLabel7 = new javax.swing.JLabel();
         jLabel8 = new javax.swing.JLabel();
-        jSpinner4 = new javax.swing.JSpinner();
+        jSpinner5 = new javax.swing.JSpinner();
         jLabel9 = new javax.swing.JLabel();
         jLabel10 = new javax.swing.JLabel();
-        jSpinner5 = new javax.swing.JSpinner();
-        jSpinner1 = new javax.swing.JSpinner();
+        jSpinner6 = new javax.swing.JSpinner();
+        jSpinner2 = new javax.swing.JSpinner();
         jLabel5 = new javax.swing.JLabel();
         jLabel6 = new javax.swing.JLabel();
-        jLabel12 = new javax.swing.JLabel();
-        jSpinner6 = new javax.swing.JSpinner();
         jScrollPane1 = new javax.swing.JScrollPane();
         jTextLogger = new javax.swing.JTextArea();
         jLabel11 = new javax.swing.JLabel();
+        jCheckBoxNagle = new javax.swing.JCheckBox();
+        jCheckBoxIperfSettings = new javax.swing.JCheckBox();
+        jCheckBoxThesisSettings = new javax.swing.JCheckBox();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setResizable(false);
@@ -197,11 +191,9 @@ public class ServerUI extends javax.swing.JFrame implements ActionListener {
 
         jLabel10.setText("Socket Timeout");
 
-        jLabel5.setText("MTU Size Uplink");
+        jLabel5.setText("Number of MTUs");
 
-        jLabel6.setText("MTU Size Downlink");
-
-        jLabel12.setText("Number of MTUs");
+        jLabel6.setText("Packet Size");
 
         javax.swing.GroupLayout jTCPpanelLayout = new javax.swing.GroupLayout(jTCPpanel);
         jTCPpanel.setLayout(jTCPpanelLayout);
@@ -210,27 +202,22 @@ public class ServerUI extends javax.swing.JFrame implements ActionListener {
             .addGroup(jTCPpanelLayout.createSequentialGroup()
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addGroup(jTCPpanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jTCPpanelLayout.createSequentialGroup()
-                        .addComponent(jLabel12)
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jTCPpanelLayout.createSequentialGroup()
+                        .addGroup(jTCPpanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jLabel5)
+                            .addComponent(jLabel6)
+                            .addComponent(jLabel7)
+                            .addComponent(jLabel8))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED))
-                    .addGroup(jTCPpanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                        .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jTCPpanelLayout.createSequentialGroup()
-                            .addGroup(jTCPpanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                .addComponent(jLabel5)
-                                .addComponent(jLabel6)
-                                .addComponent(jLabel7)
-                                .addComponent(jLabel8))
-                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED))
-                        .addGroup(jTCPpanelLayout.createSequentialGroup()
-                            .addComponent(jLabel10)
-                            .addGap(42, 42, 42))))
+                    .addGroup(jTCPpanelLayout.createSequentialGroup()
+                        .addComponent(jLabel10)
+                        .addGap(42, 42, 42)))
                 .addGroup(jTCPpanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(jSpinner6)
-                    .addComponent(jSpinner5, javax.swing.GroupLayout.DEFAULT_SIZE, 82, Short.MAX_VALUE)
+                    .addComponent(jSpinner6, javax.swing.GroupLayout.DEFAULT_SIZE, 82, Short.MAX_VALUE)
+                    .addComponent(jSpinner5)
                     .addComponent(jSpinner4)
                     .addComponent(jSpinner3)
-                    .addComponent(jSpinner2)
-                    .addComponent(jSpinner1))
+                    .addComponent(jSpinner2))
                 .addContainerGap())
             .addGroup(jTCPpanelLayout.createSequentialGroup()
                 .addContainerGap()
@@ -240,32 +227,28 @@ public class ServerUI extends javax.swing.JFrame implements ActionListener {
         jTCPpanelLayout.setVerticalGroup(
             jTCPpanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jTCPpanelLayout.createSequentialGroup()
-                .addContainerGap()
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addComponent(jLabel9)
                 .addGap(18, 18, 18)
                 .addGroup(jTCPpanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel12)
-                    .addComponent(jSpinner6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addGroup(jTCPpanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel5)
-                    .addComponent(jSpinner1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jTCPpanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel6)
                     .addComponent(jSpinner2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jTCPpanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel7)
+                    .addComponent(jLabel6)
                     .addComponent(jSpinner3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jTCPpanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel8)
+                    .addComponent(jLabel7)
                     .addComponent(jSpinner4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jTCPpanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel10)
+                    .addComponent(jLabel8)
                     .addComponent(jSpinner5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jTCPpanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel10)
+                    .addComponent(jSpinner6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addContainerGap())
         );
 
@@ -276,6 +259,27 @@ public class ServerUI extends javax.swing.JFrame implements ActionListener {
         jLabel11.setFont(new java.awt.Font("Lucida Grande", 1, 18)); // NOI18N
         jLabel11.setText("Logger");
 
+        jCheckBoxNagle.setText("Disable Nagle Algorithm");
+        jCheckBoxNagle.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jCheckBoxNagleActionPerformed(evt);
+            }
+        });
+
+        jCheckBoxIperfSettings.setText("Iperf Settings");
+        jCheckBoxIperfSettings.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jCheckBoxIperfSettingsActionPerformed(evt);
+            }
+        });
+
+        jCheckBoxThesisSettings.setText("Thesis Settings");
+        jCheckBoxThesisSettings.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jCheckBoxThesisSettingsActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -284,11 +288,17 @@ public class ServerUI extends javax.swing.JFrame implements ActionListener {
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
                     .addGroup(layout.createSequentialGroup()
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(jTCPpanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
-                                .addGap(5, 5, 5)
-                                .addComponent(jLabel11)))
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                                .addComponent(jTCPpanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
+                                    .addGap(5, 5, 5)
+                                    .addComponent(jLabel11)))
+                            .addComponent(jCheckBoxNagle)
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(jCheckBoxIperfSettings)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(jCheckBoxThesisSettings)))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(jGraphPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(layout.createSequentialGroup()
@@ -347,19 +357,25 @@ public class ServerUI extends javax.swing.JFrame implements ActionListener {
                                 .addComponent(jRadioServerButton)
                                 .addComponent(jTextIPserver, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addComponent(jLabel2)))))
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(jGraphPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18))
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                        .addGap(40, 40, 40)
-                        .addComponent(jTCPpanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGap(18, 18, Short.MAX_VALUE))
+                    .addGroup(layout.createSequentialGroup()
                         .addGap(18, 18, 18)
+                        .addComponent(jCheckBoxNagle)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(jCheckBoxIperfSettings)
+                            .addComponent(jCheckBoxThesisSettings))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(jTCPpanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jLabel11)
                         .addGap(4, 4, 4)))
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 102, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(15, Short.MAX_VALUE))
+                .addContainerGap(16, Short.MAX_VALUE))
         );
 
         getAccessibleContext().setAccessibleDescription("");
@@ -372,7 +388,7 @@ public class ServerUI extends javax.swing.JFrame implements ActionListener {
 //     ************************************
     public synchronized void Log(String s) {
         try {
-            jTextLogger.append(s);
+            jTextLogger.append(s+"\n");
             System.out.print(s);
         } catch (Exception e) {
             System.err.println("Error in Log: " + e + "\n");
@@ -390,14 +406,17 @@ public class ServerUI extends javax.swing.JFrame implements ActionListener {
             jTextPortClient.setEnabled(true);
             jTextPortServer.setEnabled(true);
             jTextLogger.setEnabled(true);
-            jSpinner1.setEnabled(true);
             jSpinner2.setEnabled(true);
             jSpinner3.setEnabled(true);
             jSpinner4.setEnabled(true);
             jSpinner5.setEnabled(true);
             jSpinner6.setEnabled(true);
+            jSpinner6.setEnabled(true);
             jTCPpanel.setEnabled(true);
             jGraphPanel.setEnabled(true);
+            jCheckBoxNagle.setEnabled(true);
+            jCheckBoxIperfSettings.setEnabled(true);
+            jCheckBoxThesisSettings.setEnabled(true);
         } else {
             jBeginMeasurement.setEnabled(false);
             jRadioClientButton.setEnabled(false);
@@ -407,24 +426,26 @@ public class ServerUI extends javax.swing.JFrame implements ActionListener {
             jTextPortClient.setEnabled(false);
             jTextPortServer.setEnabled(false);
             jTextLogger.setEnabled(false);
-            jSpinner1.setEnabled(false);
             jSpinner2.setEnabled(false);
             jSpinner3.setEnabled(false);
             jSpinner4.setEnabled(false);
             jSpinner5.setEnabled(false);
             jSpinner6.setEnabled(false);
+            jSpinner6.setEnabled(false);
             jTCPpanel.setEnabled(false);
             jGraphPanel.setEnabled(false);
-            jGraphPanel.updateUI();
-
+            jCheckBoxNagle.setEnabled(false);
+            jCheckBoxIperfSettings.setEnabled(false);
+            jCheckBoxThesisSettings.setEnabled(false);
         }
+        jGraphPanel.updateUI();
     }
 
     //Update graph in real time
     private void DynamicLineAndTimeSeriesChart(final String seriesString) {
 
-        this.series = new TimeSeries(seriesString, Second.class);
-        final TimeSeriesCollection dataset = new TimeSeriesCollection(this.series);
+        series = new TimeSeries(seriesString, Second.class);
+        final TimeSeriesCollection dataset = new TimeSeriesCollection(series);
         JFreeChart chart = createChart(dataset);
         //Created Chartpanel for chart area
         ChartPanel chartPanel = new ChartPanel(chart);
@@ -473,7 +494,7 @@ public class ServerUI extends javax.swing.JFrame implements ActionListener {
     public void actionPerformed(final ActionEvent e) {
         try {
             //Create a Second object to solve duplicate time series
-            this.series.addOrUpdate(new Second(new Date(), TimeZone.getDefault()), RTInputStream.bytesTotal);
+            series.addOrUpdate(new Second(new Date(), TimeZone.getDefault()), Client.RTInputStream.bytesGraph);
 
             //System.err.println("RTin.byteCnt="+RTInputStream.byteCnt);
         } catch (Exception ex) {
@@ -499,55 +520,47 @@ public class ServerUI extends javax.swing.JFrame implements ActionListener {
                 Log("Server started! \n");
 
                 //Spinners Listeners
-                //MTU Size Uplink
-                jSpinner1.setValue((Integer) Constants.BLOCKSIZE_UPLINK);
-                jSpinner1.addChangeListener(new ChangeListener() {
-                    @Override
-                    public void stateChanged(ChangeEvent e) {
-                        Constants.BLOCKSIZE_UPLINK = (Integer) jSpinner1.getValue();
-                    }
-                });
-                //MTU Size Downlink
-                jSpinner2.setValue((Integer) Constants.BLOCKSIZE_DOWNLINK);
+               
+                //Number of MTUs
+                jSpinner2.setValue((Integer) Constants.NUMBER_BLOCKS);
                 jSpinner2.addChangeListener(new ChangeListener() {
                     @Override
                     public void stateChanged(ChangeEvent e) {
-                        Constants.BLOCKSIZE_DOWNLINK = (Integer) jSpinner2.getValue();
+                        Constants.BLOCKSIZE = (Integer) jSpinner3.getValue();
                     }
                 });
-                //Socket rcv Buffer
-                jSpinner3.setValue((Integer) Constants.SOCKET_RCVBUF);
+                //Packet Size
+                jSpinner3.setValue((Integer) Constants.BLOCKSIZE);
                 jSpinner3.addChangeListener(new ChangeListener() {
                     @Override
                     public void stateChanged(ChangeEvent e) {
-                        Constants.SOCKET_RCVBUF = (Integer) jSpinner3.getValue();
+                        Constants.SOCKET_RCVBUF = (Integer) jSpinner4.getValue();
                     }
                 });
-                //Socket snd Buffer
-                jSpinner4.setValue((Integer) Constants.SOCKET_SNDBUF);
+                //Socket rcv Buffer
+                jSpinner4.setValue((Integer) Constants.SOCKET_RCVBUF);
                 jSpinner4.addChangeListener(new ChangeListener() {
                     @Override
                     public void stateChanged(ChangeEvent e) {
-                        Constants.SOCKET_SNDBUF = (Integer) jSpinner4.getValue();
+                        Constants.SOCKET_SNDBUF = (Integer) jSpinner5.getValue();
                     }
                 });
-                //Socket Timeout
-                jSpinner5.setValue((Integer) Constants.SO_TIMEOUT);
+                //Socket snd Buffer
+                jSpinner5.setValue((Integer) Constants.SOCKET_SNDBUF);
                 jSpinner5.addChangeListener(new ChangeListener() {
                     @Override
                     public void stateChanged(ChangeEvent e) {
-                        Constants.SO_TIMEOUT = (Integer) jSpinner5.getValue();
+                        Constants.SO_TIMEOUT = (Integer) jSpinner6.getValue();
                     }
                 });
-                //Number of MTUs
-                jSpinner6.setValue((Integer) Constants.NUMBER_BLOCKS);
+                //Socket Timeout
+                jSpinner6.setValue((Integer) Constants.SO_TIMEOUT);
                 jSpinner6.addChangeListener(new ChangeListener() {
                     @Override
                     public void stateChanged(ChangeEvent e) {
                         Constants.NUMBER_BLOCKS = (Integer) jSpinner6.getValue();
                     }
                 });
-
             } else {
                 setInterfaceEnable(false);
                 jRadioClientButton.setSelected(false);
@@ -625,6 +638,39 @@ public class ServerUI extends javax.swing.JFrame implements ActionListener {
         }
     }//GEN-LAST:event_jRadioServerButtonActionPerformed
 
+    private void jCheckBoxThesisSettingsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBoxThesisSettingsActionPerformed
+       isIperfSettings = !jCheckBoxThesisSettings.isSelected();
+        if (!isIperfSettings) {
+            jSpinner3.setValue(14600);
+            jSpinner4.setValue(14600);
+            jSpinner2.setValue(1460);
+            jCheckBoxIperfSettings.setEnabled(false);
+        }else{
+            jCheckBoxIperfSettings.setEnabled(true);
+        }
+    }//GEN-LAST:event_jCheckBoxThesisSettingsActionPerformed
+
+    private void jCheckBoxIperfSettingsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBoxIperfSettingsActionPerformed
+        isIperfSettings = jCheckBoxIperfSettings.isSelected();
+        if (isIperfSettings) {
+            jSpinner3.setValue(64000);
+            jSpinner4.setValue(64000);
+            jSpinner2.setValue(8000);
+            jCheckBoxThesisSettings.setEnabled(false);
+        }else{
+            jCheckBoxThesisSettings.setEnabled(true);
+        }
+    }//GEN-LAST:event_jCheckBoxIperfSettingsActionPerformed
+
+    private void jCheckBoxNagleActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBoxNagleActionPerformed
+        isNagleDisable = jCheckBoxNagle.isSelected();
+        if (isNagleDisable) {
+            Log("Nagle OFF");
+        } else {
+            Log("Nagle ON");
+        }
+    }//GEN-LAST:event_jCheckBoxNagleActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -663,11 +709,13 @@ public class ServerUI extends javax.swing.JFrame implements ActionListener {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JToggleButton jActiveButton;
     private javax.swing.JButton jBeginMeasurement;
+    private javax.swing.JCheckBox jCheckBoxIperfSettings;
+    private javax.swing.JCheckBox jCheckBoxNagle;
+    private javax.swing.JCheckBox jCheckBoxThesisSettings;
     private javax.swing.JPanel jGraphPanel;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;
-    private javax.swing.JLabel jLabel12;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
@@ -679,7 +727,6 @@ public class ServerUI extends javax.swing.JFrame implements ActionListener {
     private javax.swing.JRadioButton jRadioClientButton;
     private javax.swing.JRadioButton jRadioServerButton;
     private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JSpinner jSpinner1;
     private javax.swing.JSpinner jSpinner2;
     private javax.swing.JSpinner jSpinner3;
     private javax.swing.JSpinner jSpinner4;

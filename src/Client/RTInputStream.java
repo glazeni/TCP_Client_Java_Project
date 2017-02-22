@@ -42,7 +42,7 @@ public class RTInputStream extends FilterInputStream {
         int count = super.read(data, off, len);
 
         bytesTotal += count;//Sum of all read bytes
-        bytesGraph += count;
+        bytesGraph += count * 8; //Sum of all read bits to be shown in bandwidth graph
         return count;
     }
     

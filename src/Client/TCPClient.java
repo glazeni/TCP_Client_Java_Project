@@ -51,8 +51,8 @@ public class TCPClient extends Thread {
         }
     }
     
-    public static void main(String[] args) {
-        TCPClient tcpClient = new TCPClient();
-        tcpClient.start();
-    }
+//    public static void main(String[] args) {
+//        TCPClient tcpClient = new TCPClient();
+//        tcpClient.start();
+//    }
 }
