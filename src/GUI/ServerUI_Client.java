@@ -517,7 +517,7 @@ public class ServerUI_Client extends javax.swing.JFrame implements ActionListene
                 jSpinner3.addChangeListener(new ChangeListener() {
                     @Override
                     public void stateChanged(ChangeEvent e) {
-                        Constants.SOCKET_RCVBUF = (Integer) jSpinner4.getValue();
+                        Constants.BLOCKSIZE = (Integer) jSpinner3.getValue();
                     }
                 });
                 //Socket rcv Buffer
@@ -525,7 +525,7 @@ public class ServerUI_Client extends javax.swing.JFrame implements ActionListene
                 jSpinner4.addChangeListener(new ChangeListener() {
                     @Override
                     public void stateChanged(ChangeEvent e) {
-                        Constants.SOCKET_SNDBUF = (Integer) jSpinner5.getValue();
+                        Constants.SOCKET_RCVBUF = (Integer) jSpinner4.getValue();
                     }
                 });
                 //Socket snd Buffer
@@ -533,7 +533,7 @@ public class ServerUI_Client extends javax.swing.JFrame implements ActionListene
                 jSpinner5.addChangeListener(new ChangeListener() {
                     @Override
                     public void stateChanged(ChangeEvent e) {
-                        Constants.SO_TIMEOUT = (Integer) jSpinner6.getValue();
+                        Constants.SOCKET_SNDBUF = (Integer) jSpinner5.getValue();
                     }
                 });
                 //Socket Timeout
@@ -541,7 +541,7 @@ public class ServerUI_Client extends javax.swing.JFrame implements ActionListene
                 jSpinner6.addChangeListener(new ChangeListener() {
                     @Override
                     public void stateChanged(ChangeEvent e) {
-                        Constants.NUMBER_BLOCKS = (Integer) jSpinner6.getValue();
+                        Constants.SO_TIMEOUT = (Integer) jSpinner6.getValue();
                     }
                 });
             } else {
