@@ -311,32 +311,35 @@ public class Connection extends Thread {
             for (int p = 0; p < 10; p++) {
                 dataIn.readByte();
                 uplink_Client_snd();
-                if (isNagleDisable) {
-                    String cmd = "iperf3 -p 11010 -N -n 1 -w 146000 -l 146000 -c 193.136.127.218";
-                    runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
-                    runShell.run();
-                } else {
-                    String cmd = "iperf3 -p 11010 -n 1 -w 146000 -l 146000 -c 193.136.127.218";
-                    runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
-                    runShell.run();
-                }
             }
-            //Downlink
+            //Run Iperf
+            if (isNagleDisable) {
+                String cmd = "iperf3 -p 11010 -N -t 10 -w 146000 -l 146000 -c 193.136.127.218";
+                runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
+                runShell.run();
+            } else {
+                String cmd = "iperf3 -p 11010 -t 10 -w 146000 -l 146000 -c 193.136.127.218";
+                runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
+                runShell.run();
+            }
+            //Downlink App
             AvailableBW.clear();
             dataIn.readByte();
             for (int p = 0; p < 10; p++) {
                 dataOut.writeByte(2);
                 downlink_Client_rcv();
                 AvailableBW.add(PacketTrain());
-                if (isNagleDisable) {
-                    String cmd = "iperf3 -p 11010 -N -n 1 -w 146000 -l 146000 -c 193.136.127.218 -R";
-                    runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, false);
-                    runShell.run();
-                } else {
-                    String cmd = "iperf3 -p 11010 -n 1 -w 146000 -l 146000 -c 193.136.127.218 -R";
-                    runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, false);
-                    runShell.run();
-                }
+
+            }
+            //Run Iperf
+            if (isNagleDisable) {
+                String cmd = "iperf3 -p 11010 -N -t 10 -w 146000 -l 146000 -c 193.136.127.218 -R";
+                runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, false);
+                runShell.run();
+            } else {
+                String cmd = "iperf3 -p 11010 -t 10 -w 146000 -l 146000 -c 193.136.127.218 -R";
+                runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, false);
+                runShell.run();
             }
         } catch (IOException ex) {
             ex.printStackTrace();
