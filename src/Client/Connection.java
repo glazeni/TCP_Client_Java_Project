@@ -120,7 +120,7 @@ public class Connection extends Thread {
 
             dataOut.writeInt(num_blocks);
             dataOut.flush();
-            System.out.println("\n uplink_Client_snd with " + "Number Blocks=" + num_blocks);
+            System.out.println("uplink_Client_snd with " + "Number Blocks=" + num_blocks);
             for (int i = 0; i < num_blocks; i++) {
                 RTout.write(snd_buf);
                 RTout.writeTimeVector.add(System.currentTimeMillis());
@@ -205,7 +205,7 @@ public class Connection extends Thread {
             int num_blocks = 0, n = 0;
             boolean isFirstPacket = true;
             num_blocks = dataIn.readInt();
-            System.out.println("\n downlink_Client_rcv with " + "Number Blocks=" + num_blocks);
+            System.out.println("downlink_Client_rcv with " + "Number Blocks=" + num_blocks);
             for (int i = 0; i < num_blocks; i++) {
                 byteCnt = 0;
                 //Cycle to read each block
@@ -244,7 +244,7 @@ public class Connection extends Thread {
         int N = Constants.SOCKET_RCVBUF / 1460;
         int L = Constants.BLOCKSIZE;
         AvaBW = (((N - 1) * L) / deltaN) * 8;
-        System.out.println("AvaBW: " + AvaBW);
+        System.out.println("AvaBW: " + AvaBW + "\n");
         return AvaBW.intValue();
     }
 
