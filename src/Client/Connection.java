@@ -324,7 +324,7 @@ public class Connection extends Thread {
             }
             //Downlink App
             AvailableBW.clear();
-            dataIn.readByte();
+            dataOut.writeByte(2);
             for (int p = 0; p < 10; p++) {
                 dataOut.writeByte(2);
                 downlink_Client_rcv();

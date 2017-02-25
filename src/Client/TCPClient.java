@@ -42,7 +42,7 @@ public class TCPClient extends Thread {
             dos.flush();
             dos.writeInt(Constants.SOCKET_SNDBUF);
             dos.flush();
-            System.err.println("isIperfSettings: " + isIperfSettings + "  " +"isNagleDisable"+isNagleDisable );
+            System.err.println("isIperfSettings: " + isIperfSettings + "  " +"isNagleDisable: "+isNagleDisable );
             connection = new Connection(ID, s_up, dataMeasurement, isIperfSettings, isNagleDisable);
 
         } catch (Exception ex) {
