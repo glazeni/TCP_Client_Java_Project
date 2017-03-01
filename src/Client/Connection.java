@@ -123,7 +123,7 @@ public class Connection extends Thread {
             System.out.println("uplink_Client_snd with " + "Number Blocks=" + num_blocks);
             for (int i = 0; i < num_blocks; i++) {
                 RTout.write(snd_buf);
-                RTout.writeTimeVector.add(System.currentTimeMillis());
+                //RTout.writeTimeVector.add(System.currentTimeMillis());
             }
         } catch (IOException ex) {
             ex.printStackTrace();
@@ -138,7 +138,7 @@ public class Connection extends Thread {
             byte[] snd_buf = new byte[Constants.BLOCKSIZE];
             while (keepRunning) {
                 RTout.write(snd_buf);
-                dataMeasurement.aux_writeTimeVector.add(System.currentTimeMillis());
+                //dataMeasurement.aux_writeTimeVector.add(System.currentTimeMillis());
             }
             return true;
         } catch (IOException ex) {

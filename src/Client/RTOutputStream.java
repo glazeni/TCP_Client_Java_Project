@@ -21,21 +21,18 @@ public class RTOutputStream extends FilterOutputStream {
 
     @Override
     public void write(int b) throws IOException {
-        long start = 0;
         super.write(b);
         super.flush();
     }
 
     @Override
     public void write(byte data[]) throws IOException {
-        long start = 0;
         super.write(data);
         super.flush();  
     }
 
     @Override
     public void write(byte data[], int off, int len) throws IOException {
-        long start = 0;
         super.write(data, off, len);
         super.flush();
     }
