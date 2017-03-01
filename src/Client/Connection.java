@@ -376,13 +376,13 @@ public class Connection extends Thread {
     private void Method_MV_Uplink_Client() throws InterruptedException {
         //Parameters
         if (isIperfSettings) {
-            Constants.SOCKET_RCVBUF = 64000;
-            Constants.SOCKET_SNDBUF = 64000;
-            Constants.BLOCKSIZE = 8000;
+            Constants.SOCKET_RCVBUF = 29200;
+            Constants.SOCKET_SNDBUF = 29200;
+            Constants.BLOCKSIZE = 128000;
         } else {
             Constants.SOCKET_RCVBUF = 14600;
             Constants.SOCKET_SNDBUF = 14600;
-            Constants.BLOCKSIZE = 1460;
+            Constants.BLOCKSIZE = 64000;
         }
 
         //Measurements
@@ -391,24 +391,14 @@ public class Connection extends Thread {
             //Uplink
             dataIn.readByte();
             //Run Both Tests
-            if (isIperfSettings && isNagleDisable) {
+            if (isNagleDisable) {
                 uplink_Client_sndInSeconds();
-                String cmd = "iperf3 -p 11010 -t 30 -i 1 -M -N -w 64000 -l 8000 -c 193.136.127.218";
+                String cmd = "iperf3 -p 11010 -t 35 -i 1 -M -N -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BLOCKSIZE + " -c 193.136.127.218";
                 runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
                 runShell.run();
-            } else if (isIperfSettings && !isNagleDisable) {
+            } else {
                 uplink_Client_sndInSeconds();
-                String cmd = "iperf3 -p 11010 -t 30 -i 1 -M -w 64000 -l 8000 -c 193.136.127.218";
-                runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
-                runShell.run();
-            } else if (!isIperfSettings && !isNagleDisable) {
-                uplink_Client_sndInSeconds();
-                String cmd = "iperf3 -p 11010 -t 30 -i 1 -M -w 14600 -l 1460 -c 193.136.127.218";
-                runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
-                runShell.run();
-            } else if (!isIperfSettings && isNagleDisable) {
-                uplink_Client_sndInSeconds();
-                String cmd = "iperf3 -p 11010 -t 30 -i 1 -M -N -w 14600 -l 1460 -c 193.136.127.218";
+                String cmd = "iperf3 -p 11010 -t 35 -i 1 -M -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BLOCKSIZE + " -c 193.136.127.218";
                 runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
                 runShell.run();
             }
@@ -433,13 +423,13 @@ public class Connection extends Thread {
     private void Method_MV_Downlink_Client() throws InterruptedException {
         //Parameters
         if (isIperfSettings) {
-            Constants.SOCKET_RCVBUF = 64000;
-            Constants.SOCKET_SNDBUF = 64000;
-            Constants.BLOCKSIZE = 8000;
+            Constants.SOCKET_RCVBUF = 29200;
+            Constants.SOCKET_SNDBUF = 29200;
+            Constants.BLOCKSIZE = 128000;
         } else {
             Constants.SOCKET_RCVBUF = 14600;
             Constants.SOCKET_SNDBUF = 14600;
-            Constants.BLOCKSIZE = 1460;
+            Constants.BLOCKSIZE = 64000;
         }
 
         //Measurements
@@ -449,28 +439,16 @@ public class Connection extends Thread {
             //Downlink
             dataIn.readByte();
             //Run Both Tests
-            if (isIperfSettings && isNagleDisable) {
+            if (isNagleDisable) {
                 long end = System.currentTimeMillis() + runningTime;
                 downlink_Client_rcvInSeconds(end);
-                String cmd = "iperf3 -p 11010 -t 30 -i 1 -M -N -w 64000 -l 8000 -c 193.136.127.218 -R";
+                String cmd = "iperf3 -p 11010 -t 35 -i 1 -M -N -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BLOCKSIZE + " -c 193.136.127.218 -R";
                 runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, false);
                 runShell.run();
-            } else if (isIperfSettings && !isNagleDisable) {
+            } else {
                 long end = System.currentTimeMillis() + runningTime;
                 downlink_Client_rcvInSeconds(end);
-                String cmd = "iperf3 -p 11010 -t 30 -i 1 -M -w 64000 -l 8000 -c 193.136.127.218 -R";
-                runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, false);
-                runShell.run();
-            } else if (!isIperfSettings && !isNagleDisable) {
-                long end = System.currentTimeMillis() + runningTime;
-                downlink_Client_rcvInSeconds(end);
-                String cmd = "iperf3 -p 11010 -t 30 -i 1 -M -w 14600 -l 1460 -c 193.136.127.218 -R";
-                runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, false);
-                runShell.run();
-            } else if (!isIperfSettings && isNagleDisable) {
-                long end = System.currentTimeMillis() + runningTime;
-                downlink_Client_rcvInSeconds(end);
-                String cmd = "iperf3 -p 11010 -t 30 -i 1 -M -N -w 14600 -l 1460 -c 193.136.127.218 -R";
+                String cmd = "iperf3 -p 11010 -t 35 -i 1 -M -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BLOCKSIZE + " -c 193.136.127.218 -R";
                 runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, false);
                 runShell.run();
             }
@@ -523,13 +501,13 @@ public class Connection extends Thread {
     private void Method_MV_UP_readVector_Client() throws InterruptedException {
         //Parameters
         if (isIperfSettings) {
-            Constants.SOCKET_RCVBUF = 64000;
-            Constants.SOCKET_SNDBUF = 64000;
-            Constants.BLOCKSIZE = 8000;
+            Constants.SOCKET_RCVBUF = 29200;
+            Constants.SOCKET_SNDBUF = 29200;
+            Constants.BLOCKSIZE = 128000;
         } else {
             Constants.SOCKET_RCVBUF = 14600;
             Constants.SOCKET_SNDBUF = 14600;
-            Constants.BLOCKSIZE = 1460;
+            Constants.BLOCKSIZE = 64000;
         }
 
         //Measurements
@@ -537,24 +515,14 @@ public class Connection extends Thread {
             //Uplink
             dataIn.readByte();
             //Run Both Tests
-            if (isIperfSettings && isNagleDisable) {
+            if (isNagleDisable) {
                 uplink_Client_sndInSeconds();
-                String cmd = "iperf3 -p 11010 -t 30 -i 1 -M -N -w 64000 -l 8000 -c 193.136.127.218";
+                String cmd = "iperf3 -p 11010 -t 35 -i 1 -M -N -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BLOCKSIZE + " -c 193.136.127.218";
                 runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
                 runShell.run();
-            } else if (isIperfSettings && !isNagleDisable) {
+            } else {
                 uplink_Client_sndInSeconds();
-                String cmd = "iperf3 -p 11010 -t 30 -i 1 -M -w 64000 -l 8000 -c 193.136.127.218";
-                runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
-                runShell.run();
-            } else if (!isIperfSettings && !isNagleDisable) {
-                uplink_Client_sndInSeconds();
-                String cmd = "iperf3 -p 11010 -t 30 -i 1 -M -w 14600 -l 1460 -c 193.136.127.218";
-                runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
-                runShell.run();
-            } else if (!isIperfSettings && isNagleDisable) {
-                uplink_Client_sndInSeconds();
-                String cmd = "iperf3 -p 11010 -t 30 -i 1 -M -N -w 14600 -l 1460 -c 193.136.127.218";
+                String cmd = "iperf3 -p 11010 -t 35 -i 1 -M -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BLOCKSIZE + " -c 193.136.127.218";
                 runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
                 runShell.run();
             }
@@ -578,13 +546,13 @@ public class Connection extends Thread {
     private void Method_MV_DOWN_readVector_Client() throws InterruptedException {
         //Parameters
         if (isIperfSettings) {
-            Constants.SOCKET_RCVBUF = 64000;
-            Constants.SOCKET_SNDBUF = 64000;
-            Constants.BLOCKSIZE = 8000;
+            Constants.SOCKET_RCVBUF = 29200;
+            Constants.SOCKET_SNDBUF = 29200;
+            Constants.BLOCKSIZE = 128000;
         } else {
             Constants.SOCKET_RCVBUF = 14600;
             Constants.SOCKET_SNDBUF = 14600;
-            Constants.BLOCKSIZE = 1460;
+            Constants.BLOCKSIZE = 64000;
         }
 
         //Measurements
@@ -593,28 +561,16 @@ public class Connection extends Thread {
             //Downlink
             dataIn.readByte();
             //Run Iperf
-            if (isIperfSettings && isNagleDisable) {
+            if (isNagleDisable) {
                 long end = System.currentTimeMillis() + runningTime;
                 downlink_Client_rcvInSeconds(end);
-                String cmd = "iperf3 -p 11010 -t 30 -i 1 -M -N -w 64000 -l 8000 -c 193.136.127.218 -R";
+                String cmd = "iperf3 -p 11010 -t 35 -i 1 -M -N -w "+Constants.SOCKET_RCVBUF+" -l "+Constants.BLOCKSIZE+" -c 193.136.127.218";
                 runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, false);
                 runShell.run();
-            } else if (isIperfSettings && !isNagleDisable) {
+            } else {
                 long end = System.currentTimeMillis() + runningTime;
                 downlink_Client_rcvInSeconds(end);
-                String cmd = "iperf3 -p 11010 -t 30 -i 1 -M -w 64000 -l 8000 -c 193.136.127.218 -R";
-                runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, false);
-                runShell.run();
-            } else if (!isIperfSettings && !isNagleDisable) {
-                long end = System.currentTimeMillis() + runningTime;
-                downlink_Client_rcvInSeconds(end);
-                String cmd = "iperf3 -p 11010 -t 30 -i 1 -M -w 14600 -l 1460 -c 193.136.127.218 -R";
-                runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, false);
-                runShell.run();
-            } else if (!isIperfSettings && isNagleDisable) {
-                long end = System.currentTimeMillis() + runningTime;
-                downlink_Client_rcvInSeconds(end);
-                String cmd = "iperf3 -p 11010 -t 30 -i 1 -M -N -w 14600 -l 1460 -c 193.136.127.218 -R";
+                String cmd = "iperf3 -p 11010 -t 35 -i 1 -M -w "+Constants.SOCKET_RCVBUF+" -l "+Constants.BLOCKSIZE+" -c 193.136.127.218";
                 runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, false);
                 runShell.run();
             }
