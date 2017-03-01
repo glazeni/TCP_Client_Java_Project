@@ -575,7 +575,7 @@ public class ServerUI_Client extends javax.swing.JFrame implements ActionListene
         try {
             //CLIENT MODE
             if (jRadioClientButton.isSelected()) {
-                tcpClient = new TCPClient(isIperfSettings,isNagleDisable);
+                tcpClient = new TCPClient(isNagleDisable);
                 tcpClient.start();
             } else {
                 //SERVER MODE

@@ -12,13 +12,11 @@ public class TCPClient extends Thread {
     private Connection connection = null;
     private TCP_Properties TCP_param = null;
     private DataMeasurement dataMeasurement = null;
-    private int ID = 0;
-    private boolean isIperfSettings;
+    private int ID = 0; 
     public boolean isNagleDisable;
     
-    public TCPClient(boolean _isIperfSettings, boolean _isNagleDisable) {
+    public TCPClient(boolean _isNagleDisable) {
         try {
-            this.isIperfSettings = _isIperfSettings;
             this.isNagleDisable = _isNagleDisable;
             //Data Measurement
             dataMeasurement = new DataMeasurement();
@@ -32,8 +30,6 @@ public class TCPClient extends Thread {
             //Receive Client ID from Server
             DataInputStream dis = new DataInputStream(s_up.getInputStream());
             ID = dis.readInt();
-            dos.writeBoolean(isIperfSettings);
-            dos.flush();
             dos.writeBoolean(isNagleDisable);
             dos.flush();
             dos.writeInt(Constants.BLOCKSIZE);
@@ -42,8 +38,8 @@ public class TCPClient extends Thread {
             dos.flush();
             dos.writeInt(Constants.SOCKET_SNDBUF);
             dos.flush();
-            System.err.println("isIperfSettings: " + isIperfSettings + "  " +"isNagleDisable: "+isNagleDisable );
-            connection = new Connection(ID, s_up, dataMeasurement, isIperfSettings, isNagleDisable);
+            System.err.println("isNagleDisable: "+isNagleDisable );
+            connection = new Connection(ID, s_up, dataMeasurement, isNagleDisable);
 
         } catch (Exception ex) {
             ex.printStackTrace();
