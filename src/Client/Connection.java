@@ -374,17 +374,6 @@ public class Connection extends Thread {
     }
 
     private void Method_MV_Uplink_Client() throws InterruptedException {
-        //Parameters
-        if (isIperfSettings) {
-            Constants.SOCKET_RCVBUF = 29200;
-            Constants.SOCKET_SNDBUF = 29200;
-            Constants.BLOCKSIZE = 128000;
-        } else {
-            Constants.SOCKET_RCVBUF = 14600;
-            Constants.SOCKET_SNDBUF = 14600;
-            Constants.BLOCKSIZE = 64000;
-        }
-
         //Measurements
         dataMeasurement.ByteSecondShell_up.clear();
         try {
@@ -421,17 +410,6 @@ public class Connection extends Thread {
     }
 
     private void Method_MV_Downlink_Client() throws InterruptedException {
-        //Parameters
-        if (isIperfSettings) {
-            Constants.SOCKET_RCVBUF = 29200;
-            Constants.SOCKET_SNDBUF = 29200;
-            Constants.BLOCKSIZE = 128000;
-        } else {
-            Constants.SOCKET_RCVBUF = 14600;
-            Constants.SOCKET_SNDBUF = 14600;
-            Constants.BLOCKSIZE = 64000;
-        }
-
         //Measurements
         dataMeasurement.SampleSecond_down.clear();
         dataMeasurement.ByteSecondShell_down.clear();
@@ -499,17 +477,6 @@ public class Connection extends Thread {
     }
 
     private void Method_MV_UP_readVector_Client() throws InterruptedException {
-        //Parameters
-        if (isIperfSettings) {
-            Constants.SOCKET_RCVBUF = 29200;
-            Constants.SOCKET_SNDBUF = 29200;
-            Constants.BLOCKSIZE = 128000;
-        } else {
-            Constants.SOCKET_RCVBUF = 14600;
-            Constants.SOCKET_SNDBUF = 14600;
-            Constants.BLOCKSIZE = 64000;
-        }
-
         //Measurements
         try {
             //Uplink
@@ -544,17 +511,6 @@ public class Connection extends Thread {
     }
 
     private void Method_MV_DOWN_readVector_Client() throws InterruptedException {
-        //Parameters
-        if (isIperfSettings) {
-            Constants.SOCKET_RCVBUF = 29200;
-            Constants.SOCKET_SNDBUF = 29200;
-            Constants.BLOCKSIZE = 128000;
-        } else {
-            Constants.SOCKET_RCVBUF = 14600;
-            Constants.SOCKET_SNDBUF = 14600;
-            Constants.BLOCKSIZE = 64000;
-        }
-
         //Measurements
         dataMeasurement.SampleReadTime.clear();
         try {
