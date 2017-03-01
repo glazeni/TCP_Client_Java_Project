@@ -222,7 +222,7 @@ public class Connection extends Thread {
     private void Method_PT() {
         //Measurements
         try {
-            //Uplink
+            //Uplink App
             dataIn.readByte();
             for (int p = 0; p < 10; p++) {
                 dataIn.readByte();
@@ -230,11 +230,11 @@ public class Connection extends Thread {
             }
             //Run Iperf
             if (isNagleDisable) {
-                String cmd = "iperf3 -p 11010 -N -t 10 -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BLOCKSIZE + " -c 193.136.127.218";
+                String cmd = "iperf3 -p 11010 -M -N -t 10 -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BLOCKSIZE + " -c 193.136.127.218";
                 runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
                 runShell.run();
             } else {
-                String cmd = "iperf3 -p 11010 -t 10 -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BLOCKSIZE + " -c 193.136.127.218";
+                String cmd = "iperf3 -p 11010 -M -t 10 -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BLOCKSIZE + " -c 193.136.127.218";
                 runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
                 runShell.run();
             }
@@ -249,11 +249,11 @@ public class Connection extends Thread {
             }
             //Run Iperf
             if (isNagleDisable) {
-                String cmd = "iperf3 -p 11010 -N -t 10 -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BLOCKSIZE + " -c 193.136.127.218 -R";
+                String cmd = "iperf3 -p 11010 -M -N -t 10 -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BLOCKSIZE + " -c 193.136.127.218 -R";
                 runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, false);
                 runShell.run();
             } else {
-                String cmd = "iperf3 -p 11010 -t 10 -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BLOCKSIZE + " -c 193.136.127.218 -R";
+                String cmd = "iperf3 -p 11010 -M -t 10 -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BLOCKSIZE + " -c 193.136.127.218 -R";
                 runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, false);
                 runShell.run();
             }
