@@ -490,6 +490,8 @@ public class ServerUI_Client extends javax.swing.JFrame implements ActionListene
             //System.err.println("RTin.byteCnt="+RTInputStream.byteCnt);
         } catch (Exception ex) {
             ex.printStackTrace();
+        }finally{
+            Client.RTInputStream.bytesGraph=0;
         }
     }
 
