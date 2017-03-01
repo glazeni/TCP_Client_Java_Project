@@ -520,13 +520,13 @@ public class Connection extends Thread {
             if (isNagleDisable) {
                 long end = System.currentTimeMillis() + runningTime;
                 downlink_Client_rcvInSeconds(end);
-                String cmd = "iperf3 -p 11010 -t 35 -i 1 -M -N -w "+Constants.SOCKET_RCVBUF+" -l "+Constants.BLOCKSIZE+" -c 193.136.127.218";
+                String cmd = "iperf3 -p 11010 -t 35 -i 1 -M -N -w "+Constants.SOCKET_RCVBUF+" -l "+Constants.BLOCKSIZE+" -c 193.136.127.218 -R";
                 runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, false);
                 runShell.run();
             } else {
                 long end = System.currentTimeMillis() + runningTime;
                 downlink_Client_rcvInSeconds(end);
-                String cmd = "iperf3 -p 11010 -t 35 -i 1 -M -w "+Constants.SOCKET_RCVBUF+" -l "+Constants.BLOCKSIZE+" -c 193.136.127.218";
+                String cmd = "iperf3 -p 11010 -t 35 -i 1 -M -w "+Constants.SOCKET_RCVBUF+" -l "+Constants.BLOCKSIZE+" -c 193.136.127.218 -R";
                 runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, false);
                 runShell.run();
             }
