@@ -64,8 +64,14 @@ public class Connection extends Thread {
             METHOD = dataIn.readUTF();
             System.err.println("METHOD: " + METHOD);
             switch (METHOD) {
-                case "PT":
-                    Method_PT();
+                case "PT_Uplink":
+                    Method_PT_Uplink();
+                    break;
+                case "PT_Downlink":
+
+                    break;
+                case "PT_Report":
+
                     break;
                 case "MV_Uplink":
                     isThreadMethod = true;
@@ -114,7 +120,7 @@ public class Connection extends Thread {
         double diffTime = 0;
         try {
             System.out.println("uplink_Client_snd STARTED!");
-            
+
             byte[] payload = new byte[Constants.PACKETSIZE];
             Random rand = new Random();
             // Randomize the payload with chars between 'a' to 'z' and 'A' to 'Z'  to assure there is no "\r\n"
@@ -123,6 +129,7 @@ public class Connection extends Thread {
             }
             //Send Packet Train
             dataOut.writeInt(Constants.NUMBER_PACKETS);
+            dataOut.flush();
             while (counter < Constants.NUMBER_PACKETS) {
                 // start recording the first packet send time
                 if (beforeTime == 0) {
@@ -132,10 +139,10 @@ public class Connection extends Thread {
                 outCtrl.println(new String(payload));
                 outCtrl.flush();
 
-                // create train gap in nanoseconds
+                // create train gap
                 try {
-                    if (Constants.pktGapNS > 0) {
-                        Thread.sleep(Constants.pktGapNS);
+                    if (Constants.PACKET_GAP > 0) {
+                        Thread.sleep(Constants.PACKET_GAP);
                     }
                 } catch (InterruptedException e) {
                     e.printStackTrace();
@@ -143,15 +150,12 @@ public class Connection extends Thread {
                 counter++;
             }
             afterTime = System.currentTimeMillis();
+            diffTime = afterTime - beforeTime;
+            outCtrl.println("END:" + diffTime);
+            outCtrl.flush();
         } catch (Exception ex) {
             ex.printStackTrace();
         } finally {
-            diffTime = afterTime - beforeTime;
-            try {
-                dataOut.writeDouble(diffTime);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
             System.err.println("uplink_Client_snd DONE");
         }
     }
@@ -231,6 +235,7 @@ public class Connection extends Thread {
             System.out.println("downlink_Client_rcv STARTED!");
             //Receive Packet Train
             num_packets = dataIn.readInt();
+            System.out.println("NUM_PACKETS:" + num_packets);
             while ((inputLine = inCtrl.readLine()) != null) {
                 if (startTime == 0) {
                     startTime = System.currentTimeMillis();
@@ -239,23 +244,21 @@ public class Connection extends Thread {
 
                 byteCounter += inputLine.length();
 
-                System.out.println("Received the " + (counter + 1) + " message with size: " + inputLine.length());
+                System.out.println("Received the " + (counter) + " message with size: " + inputLine.length());
                 // increase the counter which is equal to the number of packets
                 counter++;
-                if(counter==num_packets){
+                //read "END" msg
+                if (inputLine.substring(0, Constants.FINAL_MSG.length()).equals(Constants.FINAL_MSG)) {
+                    gapTimeClt = Double.parseDouble(inputLine.substring(Constants.FINAL_MSG.length() + 1));
+                    System.out.println("Detect last downlink link message with GAP=" + gapTimeClt);
                     break;
                 }
             }
             endTime = System.currentTimeMillis();
+
         } catch (IOException ex) {
             ex.printStackTrace();
         } finally {
-            try {
-                //Receive Gap Time From Client
-                gapTimeClt = dataIn.readDouble();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
             gapTimeSrv = endTime - startTime;
             // Bandwidth calculation
             // 1 Mbit/s = 125 Byte/ms 
@@ -268,86 +271,79 @@ public class Connection extends Thread {
             System.out.println("Total receiving " + counter + " packets.");
             System.out.println("Client gap time is " + gapTimeClt + " ms.");
             System.out.println("Total package received " + byteCounter + " Bytes with " + gapTimeSrv + " ms total GAP.");
-            System.out.println("Estimated Total upload bandwidth is " + estTotalUpBandWidth + " Mbits/sec.");
+            System.out.println("Estimated Total download bandwidth is " + estTotalUpBandWidth + " Mbits/sec.");
             System.out.println("Availabe fraction is " + availableBWFraction);
-            System.out.println("Estimated Available upload bandwidth is " + estAvailiableUpBandWidth + " Mbits/sec.");
-            System.err.println("downlink_Client_rcv DONE");
+            System.out.println("Estimated Available download bandwidth is " + estAvailiableUpBandWidth + " Mbits/sec.");
+            System.err.println("downlink_Client_rcv DONE!");
         }
     }
 
-//    private int PacketTrain() {
-//        Double AvaBW = null;
-//        double deltaN = lastPacket - firstPacket;
-//        int N = Constants.SOCKET_RCVBUF / 1460;
-//        int L = Constants.BUFFERSIZE;
-//        AvaBW = (((N - 1) * L) / deltaN) * 8;
-//        System.out.println("AvaBW: " + AvaBW + "\n");
-//        return AvaBW.intValue();
-//    }
-
-    private void Method_PT() {
+    private void Method_PT_Uplink() {
         //Measurements
         try {
             //Uplink App
             dataIn.readByte();
-            uplink_Client_snd();
-
-            //Run Iperf
-            if (isNagleDisable) {
-                String cmd = "iperf3 -p 11010 -M -N -t 10 -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218";
-                runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
-                runShell.run();
-            } else {
-                String cmd = "iperf3 -p 11010 -M -t 10 -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218";
-                runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
-                runShell.run();
-            }
-            //Downlink App
-            AvailableBW.clear();
-            dataOut.writeByte(2);
-            downlink_Client_rcv();
-
-            //Run Iperf
-            if (isNagleDisable) {
-                String cmd = "iperf3 -p 11010 -M -N -t 10 -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218 -R";
-                runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, false);
-                runShell.run();
-            } else {
-                String cmd = "iperf3 -p 11010 -M -t 10 -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218 -R";
-                runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, false);
-                runShell.run();
+            for (int p = 0; p < 10; p++) {
+                uplink_Client_snd();
             }
         } catch (IOException ex) {
             ex.printStackTrace();
         }
+        //Run Iperf
+//            if (isNagleDisable) {
+//                String cmd = "iperf3 -p 11010 -M -N -t 10 -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218";
+//                runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
+//                runShell.run();
+//            } else {
+//                String cmd = "iperf3 -p 11010 -M -t 10 -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218";
+//                runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
+//                runShell.run();
+//            }
+        //Downlink App
+//            AvailableBW.clear();
+//            dataOut.writeByte(2);
+//            downlink_Client_rcv();
+//
+//            //Run Iperf
+//            if (isNagleDisable) {
+//                String cmd = "iperf3 -p 11010 -M -N -t 10 -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218 -R";
+//                runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, false);
+//                runShell.run();
+//            } else {
+//                String cmd = "iperf3 -p 11010 -M -t 10 -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218 -R";
+//                runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, false);
+//                runShell.run();
+//            }
+//        } catch (IOException ex) {
+//            ex.printStackTrace();
+//        }
         //Report Measurements - AvailableBW_down Vector
 
-        try {
-            //Report AvailableBW_down 
-            dataOut.writeByte(2);
-            dataOut.writeInt(AvailableBW.size());
-            for (int k = 0; k < AvailableBW.size(); k++) {
-                dataOut.writeInt(AvailableBW.get(k));
-                dataOut.flush();
-            }
-            //Report Shell Vector from terminal Uplink
-            dataOut.writeInt(dataMeasurement.ByteSecondShell_up.size());
-            for (int b = 0; b < dataMeasurement.ByteSecondShell_up.size(); b++) {
-                dataOut.writeInt(dataMeasurement.ByteSecondShell_up.get(b));
-                dataOut.flush();
-            }
-            //Report Shell Vector from terminal Downlink
-            dataOut.writeInt(dataMeasurement.ByteSecondShell_down.size());
-            for (int b = 0; b < dataMeasurement.ByteSecondShell_down.size(); b++) {
-                dataOut.writeInt(dataMeasurement.ByteSecondShell_down.get(b));
-                dataOut.flush();
-            }
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        } finally {
-            System.err.println("Method_PT along with report is done!");
-        }
-
+//        try {
+//            //Report AvailableBW_down 
+//            dataOut.writeByte(2);
+//            dataOut.writeInt(AvailableBW.size());
+//            for (int k = 0; k < AvailableBW.size(); k++) {
+//                dataOut.writeInt(AvailableBW.get(k));
+//                dataOut.flush();
+//            }
+//            //Report Shell Vector from terminal Uplink
+//            dataOut.writeInt(dataMeasurement.ByteSecondShell_up.size());
+//            for (int b = 0; b < dataMeasurement.ByteSecondShell_up.size(); b++) {
+//                dataOut.writeInt(dataMeasurement.ByteSecondShell_up.get(b));
+//                dataOut.flush();
+//            }
+//            //Report Shell Vector from terminal Downlink
+//            dataOut.writeInt(dataMeasurement.ByteSecondShell_down.size());
+//            for (int b = 0; b < dataMeasurement.ByteSecondShell_down.size(); b++) {
+//                dataOut.writeInt(dataMeasurement.ByteSecondShell_down.get(b));
+//                dataOut.flush();
+//            }
+//        } catch (IOException ex) {
+//            ex.printStackTrace();
+//        } finally {
+//            System.err.println("Method_PT along with report is done!");
+//        }
     }
 
     private void Method_MV_Uplink_Client() throws InterruptedException {
