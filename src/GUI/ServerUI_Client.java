@@ -485,11 +485,11 @@ public class ServerUI_Client extends javax.swing.JFrame implements ActionListene
                 //Spinners Listeners
                
                 //Packet Size
-                jSpinner3.setValue((Integer) Constants.BLOCKSIZE);
+                jSpinner3.setValue((Integer) Constants.BUFFERSIZE);
                 jSpinner3.addChangeListener(new ChangeListener() {
                     @Override
                     public void stateChanged(ChangeEvent e) {
-                        Constants.BLOCKSIZE = (Integer) jSpinner3.getValue();
+                        Constants.BUFFERSIZE = (Integer) jSpinner3.getValue();
                     }
                 });
                 //Socket rcv Buffer

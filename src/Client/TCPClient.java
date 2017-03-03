@@ -32,7 +32,7 @@ public class TCPClient extends Thread {
             ID = dis.readInt();
             dos.writeBoolean(isNagleDisable);
             dos.flush();
-            dos.writeInt(Constants.BLOCKSIZE);
+            dos.writeInt(Constants.BUFFERSIZE);
             dos.flush();
             dos.writeInt(Constants.SOCKET_RCVBUF);
             dos.flush();

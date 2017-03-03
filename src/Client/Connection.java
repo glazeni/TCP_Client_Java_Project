@@ -112,15 +112,18 @@ public class Connection extends Thread {
         long beforeTime = 0;
         long afterTime = 0;
         double diffTime = 0;
-        long myGapSize = 0;
         try {
-            byte[] payload = new byte[500];
+            System.out.println("uplink_Client_snd STARTED!");
+            
+            byte[] payload = new byte[Constants.PACKETSIZE];
             Random rand = new Random();
-            // Randomize the payload
+            // Randomize the payload with chars between 'a' to 'z' and 'A' to 'Z'  to assure there is no "\r\n"
             for (int i = 0; i < payload.length; i++) {
                 payload[i] = (byte) ('A' + rand.nextInt(52));
             }
-            while (counter < 50) {
+            //Send Packet Train
+            dataOut.writeInt(Constants.NUMBER_PACKETS);
+            while (counter < Constants.NUMBER_PACKETS) {
                 // start recording the first packet send time
                 if (beforeTime == 0) {
                     beforeTime = System.currentTimeMillis();
@@ -131,8 +134,8 @@ public class Connection extends Thread {
 
                 // create train gap in nanoseconds
                 try {
-                    if (myGapSize > 0) {
-                        Thread.sleep(myGapSize);
+                    if (Constants.pktGapNS > 0) {
+                        Thread.sleep(Constants.pktGapNS);
                     }
                 } catch (InterruptedException e) {
                     e.printStackTrace();
@@ -149,14 +152,14 @@ public class Connection extends Thread {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            System.err.println("uplink_DONE");
+            System.err.println("uplink_Client_snd DONE");
         }
     }
 
     private boolean uplink_Client_sndInSeconds() {
         boolean keepRunning = true;
         try {
-            byte[] snd_buf = new byte[Constants.BLOCKSIZE];
+            byte[] snd_buf = new byte[Constants.BUFFERSIZE];
             new Random().nextBytes(snd_buf);
             while (keepRunning) {
                 RTout.write(snd_buf);
@@ -171,7 +174,7 @@ public class Connection extends Thread {
 
     private boolean downlink_Client_rcvInSeconds(long _end) {
         try {
-            byte[] rcv_buf = new byte[Constants.BLOCKSIZE];
+            byte[] rcv_buf = new byte[Constants.BUFFERSIZE];
             int n = 0;
             System.out.println("\n downlink_Client_rcvInSeconds");
             //Initialize Timer
@@ -182,7 +185,7 @@ public class Connection extends Thread {
                 byteCnt = 0;
                 //Cycle to read each block
                 do {
-                    n = RTin.read(rcv_buf, byteCnt, Constants.BLOCKSIZE - byteCnt);
+                    n = RTin.read(rcv_buf, byteCnt, Constants.BUFFERSIZE - byteCnt);
 
                     if (n > 0) {
                         byteCnt += n;
@@ -194,7 +197,7 @@ public class Connection extends Thread {
                         break;
                     }
 
-                } while ((n > 0) && (byteCnt < Constants.BLOCKSIZE));
+                } while ((n > 0) && (byteCnt < Constants.BUFFERSIZE));
 
                 if (n == -1) {
                     System.out.println("Exited with n=-1");
@@ -212,47 +215,75 @@ public class Connection extends Thread {
     }
 
     private void downlink_Client_rcv() {
+        int num_packets = 0;
+        String inputLine = "";
+        int counter = 0;
+        int singlePktSize = 0;
+        long startTime = 0;
+        long endTime = 0;
+        double gapTimeSrv = 0.0;
+        double gapTimeClt = 0.0;
+        double byteCounter = 0.0;
+        double estTotalUpBandWidth = 0.0;
+        double estAvailiableUpBandWidth = 0.0;
+        double availableBWFraction = 1.0;
         try {
-            byte[] rcv_buf = new byte[Constants.BLOCKSIZE];
-            int num_blocks = 0, n = 0;
-            boolean isFirstPacket = true;
-            num_blocks = dataIn.readInt();
-            System.out.println("downlink_Client_rcv with " + "Number Blocks=" + num_blocks);
-            for (int i = 0; i < num_blocks; i++) {
-                byteCnt = 0;
-                //Cycle to read each block
-                do {
-                    n = RTin.read(rcv_buf, byteCnt, Constants.BLOCKSIZE - byteCnt);
+            System.out.println("downlink_Client_rcv STARTED!");
+            //Receive Packet Train
+            num_packets = dataIn.readInt();
+            while ((inputLine = inCtrl.readLine()) != null) {
+                if (startTime == 0) {
+                    startTime = System.currentTimeMillis();
+                    singlePktSize = inputLine.length();
+                }
 
-                    if (n > 0) {
-                        byteCnt += n;
-                        if (byteCnt >= 1460 && isFirstPacket) {
-                            firstPacket = System.currentTimeMillis();
-                            isFirstPacket = false;
-                        }
-                    }
+                byteCounter += inputLine.length();
 
-                } while ((n > 0) && (byteCnt < Constants.BLOCKSIZE));
-                lastPacket = System.currentTimeMillis();
-                if (n == -1) {
-                    System.out.println("Exited with n=-1");
+                System.out.println("Received the " + (counter + 1) + " message with size: " + inputLine.length());
+                // increase the counter which is equal to the number of packets
+                counter++;
+                if(counter==num_packets){
                     break;
                 }
             }
+            endTime = System.currentTimeMillis();
         } catch (IOException ex) {
             ex.printStackTrace();
+        } finally {
+            try {
+                //Receive Gap Time From Client
+                gapTimeClt = dataIn.readDouble();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            gapTimeSrv = endTime - startTime;
+            // Bandwidth calculation
+            // 1 Mbit/s = 125 Byte/ms 
+            estTotalUpBandWidth = byteCounter / gapTimeSrv / 125.0;
+            availableBWFraction = Math.min(gapTimeClt / gapTimeSrv, 1.0);
+            estAvailiableUpBandWidth = estTotalUpBandWidth / availableBWFraction;
+
+            // Display information at the server side
+            System.out.println("Receive single Pkt size is " + singlePktSize + " Bytes.");
+            System.out.println("Total receiving " + counter + " packets.");
+            System.out.println("Client gap time is " + gapTimeClt + " ms.");
+            System.out.println("Total package received " + byteCounter + " Bytes with " + gapTimeSrv + " ms total GAP.");
+            System.out.println("Estimated Total upload bandwidth is " + estTotalUpBandWidth + " Mbits/sec.");
+            System.out.println("Availabe fraction is " + availableBWFraction);
+            System.out.println("Estimated Available upload bandwidth is " + estAvailiableUpBandWidth + " Mbits/sec.");
+            System.err.println("downlink_Client_rcv DONE");
         }
     }
 
-    private int PacketTrain() {
-        Double AvaBW = null;
-        double deltaN = lastPacket - firstPacket;
-        int N = Constants.SOCKET_RCVBUF / 1460;
-        int L = Constants.BLOCKSIZE;
-        AvaBW = (((N - 1) * L) / deltaN) * 8;
-        System.out.println("AvaBW: " + AvaBW + "\n");
-        return AvaBW.intValue();
-    }
+//    private int PacketTrain() {
+//        Double AvaBW = null;
+//        double deltaN = lastPacket - firstPacket;
+//        int N = Constants.SOCKET_RCVBUF / 1460;
+//        int L = Constants.BUFFERSIZE;
+//        AvaBW = (((N - 1) * L) / deltaN) * 8;
+//        System.out.println("AvaBW: " + AvaBW + "\n");
+//        return AvaBW.intValue();
+//    }
 
     private void Method_PT() {
         //Measurements
@@ -260,82 +291,66 @@ public class Connection extends Thread {
             //Uplink App
             dataIn.readByte();
             uplink_Client_snd();
-        
-        //Run Iperf
-        if (isNagleDisable) {
-            String cmd = "iperf3 -p 11010 -M -N -t 10 -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BLOCKSIZE + " -c 193.136.127.218";
-            runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
-            runShell.run();
-        } else {
-            String cmd = "iperf3 -p 11010 -M -t 10 -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BLOCKSIZE + " -c 193.136.127.218";
-            runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
-            runShell.run();
-        }
-        //Downlink App
-        AvailableBW.clear();
-        dataOut.writeByte(2);
-        for (int p = 0; p < 10; p++) {
+
+            //Run Iperf
+            if (isNagleDisable) {
+                String cmd = "iperf3 -p 11010 -M -N -t 10 -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218";
+                runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
+                runShell.run();
+            } else {
+                String cmd = "iperf3 -p 11010 -M -t 10 -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218";
+                runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
+                runShell.run();
+            }
+            //Downlink App
+            AvailableBW.clear();
             dataOut.writeByte(2);
             downlink_Client_rcv();
-            AvailableBW.add(PacketTrain());
 
-        }
-        //Run Iperf
-        if (isNagleDisable) {
-            String cmd = "iperf3 -p 11010 -M -N -t 10 -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BLOCKSIZE + " -c 193.136.127.218 -R";
-            runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, false);
-            runShell.run();
-        } else {
-            String cmd = "iperf3 -p 11010 -M -t 10 -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BLOCKSIZE + " -c 193.136.127.218 -R";
-            runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, false);
-            runShell.run();
-        }
-    }
-    catch (IOException ex
-
-    
-        ) {
+            //Run Iperf
+            if (isNagleDisable) {
+                String cmd = "iperf3 -p 11010 -M -N -t 10 -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218 -R";
+                runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, false);
+                runShell.run();
+            } else {
+                String cmd = "iperf3 -p 11010 -M -t 10 -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218 -R";
+                runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, false);
+                runShell.run();
+            }
+        } catch (IOException ex) {
             ex.printStackTrace();
-    }
-    //Report Measurements - AvailableBW_down Vector
+        }
+        //Report Measurements - AvailableBW_down Vector
 
-    
         try {
             //Report AvailableBW_down 
             dataOut.writeByte(2);
-        dataOut.writeInt(AvailableBW.size());
-        for (int k = 0; k < AvailableBW.size(); k++) {
-            dataOut.writeInt(AvailableBW.get(k));
-            dataOut.flush();
-        }
-        //Report Shell Vector from terminal Uplink
-        dataOut.writeInt(dataMeasurement.ByteSecondShell_up.size());
-        for (int b = 0; b < dataMeasurement.ByteSecondShell_up.size(); b++) {
-            dataOut.writeInt(dataMeasurement.ByteSecondShell_up.get(b));
-            dataOut.flush();
-        }
-        //Report Shell Vector from terminal Downlink
-        dataOut.writeInt(dataMeasurement.ByteSecondShell_down.size());
-        for (int b = 0; b < dataMeasurement.ByteSecondShell_down.size(); b++) {
-            dataOut.writeInt(dataMeasurement.ByteSecondShell_down.get(b));
-            dataOut.flush();
-        }
-    }
-    catch (IOException ex
-
-    
-        ) {
+            dataOut.writeInt(AvailableBW.size());
+            for (int k = 0; k < AvailableBW.size(); k++) {
+                dataOut.writeInt(AvailableBW.get(k));
+                dataOut.flush();
+            }
+            //Report Shell Vector from terminal Uplink
+            dataOut.writeInt(dataMeasurement.ByteSecondShell_up.size());
+            for (int b = 0; b < dataMeasurement.ByteSecondShell_up.size(); b++) {
+                dataOut.writeInt(dataMeasurement.ByteSecondShell_up.get(b));
+                dataOut.flush();
+            }
+            //Report Shell Vector from terminal Downlink
+            dataOut.writeInt(dataMeasurement.ByteSecondShell_down.size());
+            for (int b = 0; b < dataMeasurement.ByteSecondShell_down.size(); b++) {
+                dataOut.writeInt(dataMeasurement.ByteSecondShell_down.get(b));
+                dataOut.flush();
+            }
+        } catch (IOException ex) {
             ex.printStackTrace();
-    }
-
-    
-        finally {
+        } finally {
             System.err.println("Method_PT along with report is done!");
+        }
+
     }
 
-}
-
-private void Method_MV_Uplink_Client() throws InterruptedException {
+    private void Method_MV_Uplink_Client() throws InterruptedException {
         //Measurements
         dataMeasurement.ByteSecondShell_up.clear();
         try {
@@ -344,12 +359,12 @@ private void Method_MV_Uplink_Client() throws InterruptedException {
             //Run Both Tests
             if (isNagleDisable) {
                 uplink_Client_sndInSeconds();
-                String cmd = "iperf3 -p 11010 -t 35 -i 1 -M -N -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BLOCKSIZE + " -c 193.136.127.218";
+                String cmd = "iperf3 -p 11010 -t 35 -i 1 -M -N -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218";
                 runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
                 runShell.run();
             } else {
                 uplink_Client_sndInSeconds();
-                String cmd = "iperf3 -p 11010 -t 35 -i 1 -M -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BLOCKSIZE + " -c 193.136.127.218";
+                String cmd = "iperf3 -p 11010 -t 35 -i 1 -M -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218";
                 runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
                 runShell.run();
             }
@@ -382,13 +397,13 @@ private void Method_MV_Uplink_Client() throws InterruptedException {
             if (isNagleDisable) {
                 long end = System.currentTimeMillis() + runningTime;
                 downlink_Client_rcvInSeconds(end);
-                String cmd = "iperf3 -p 11010 -t 35 -i 1 -M -N -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BLOCKSIZE + " -c 193.136.127.218 -R";
+                String cmd = "iperf3 -p 11010 -t 35 -i 1 -M -N -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218 -R";
                 runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, false);
                 runShell.run();
             } else {
                 long end = System.currentTimeMillis() + runningTime;
                 downlink_Client_rcvInSeconds(end);
-                String cmd = "iperf3 -p 11010 -t 35 -i 1 -M -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BLOCKSIZE + " -c 193.136.127.218 -R";
+                String cmd = "iperf3 -p 11010 -t 35 -i 1 -M -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218 -R";
                 runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, false);
                 runShell.run();
             }
@@ -446,12 +461,12 @@ private void Method_MV_Uplink_Client() throws InterruptedException {
             //Run Both Tests
             if (isNagleDisable) {
                 uplink_Client_sndInSeconds();
-                String cmd = "iperf3 -p 11010 -t 35 -i 1 -M -N -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BLOCKSIZE + " -c 193.136.127.218";
+                String cmd = "iperf3 -p 11010 -t 35 -i 1 -M -N -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218";
                 runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
                 runShell.run();
             } else {
                 uplink_Client_sndInSeconds();
-                String cmd = "iperf3 -p 11010 -t 35 -i 1 -M -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BLOCKSIZE + " -c 193.136.127.218";
+                String cmd = "iperf3 -p 11010 -t 35 -i 1 -M -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218";
                 runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
                 runShell.run();
             }
@@ -482,13 +497,13 @@ private void Method_MV_Uplink_Client() throws InterruptedException {
             if (isNagleDisable) {
                 long end = System.currentTimeMillis() + runningTime;
                 downlink_Client_rcvInSeconds(end);
-                String cmd = "iperf3 -p 11010 -t 35 -i 1 -M -N -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BLOCKSIZE + " -c 193.136.127.218 -R";
+                String cmd = "iperf3 -p 11010 -t 35 -i 1 -M -N -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218 -R";
                 runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, false);
                 runShell.run();
             } else {
                 long end = System.currentTimeMillis() + runningTime;
                 downlink_Client_rcvInSeconds(end);
-                String cmd = "iperf3 -p 11010 -t 35 -i 1 -M -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BLOCKSIZE + " -c 193.136.127.218 -R";
+                String cmd = "iperf3 -p 11010 -t 35 -i 1 -M -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218 -R";
                 runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, false);
                 runShell.run();
             }
