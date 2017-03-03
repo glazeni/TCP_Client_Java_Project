@@ -149,8 +149,8 @@ public class Connection extends Thread {
                 }
                 counter++;
             }
-            afterTime = System.currentTimeMillis();
-            diffTime = afterTime - beforeTime;
+            //afterTime = System.currentTimeMillis();
+            diffTime = System.currentTimeMillis() - beforeTime;
             outCtrl.println("END:" + diffTime);
             outCtrl.flush();
         } catch (Exception ex) {
@@ -283,9 +283,8 @@ public class Connection extends Thread {
         try {
             //Uplink App
             dataIn.readByte();
-            for (int p = 0; p < 10; p++) {
-                uplink_Client_snd();
-            }
+            uplink_Client_snd();
+
         } catch (IOException ex) {
             ex.printStackTrace();
         }
