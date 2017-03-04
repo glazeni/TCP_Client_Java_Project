@@ -31,7 +31,7 @@ public class Connection extends Thread {
     private int byteCnt = 0;
     private boolean isThreadMethod;
     private String METHOD = null;
-    private Vector<Integer> AvailableBW = null;
+    private Vector<Double> AvailableBW = null;
     private TCP_Properties TCP_param = null;
     private long runningTime = 35000;
     private int ID = 0;
@@ -52,7 +52,7 @@ public class Connection extends Thread {
             outCtrl = new PrintWriter(RTout, true);
             inCtrl = new BufferedReader(new InputStreamReader(RTin));
 
-            AvailableBW = new Vector<Integer>();
+            AvailableBW = new Vector<Double>();
         } catch (Exception e) {
             System.out.println("Error in connection:" + e.getMessage());
         }
@@ -68,10 +68,10 @@ public class Connection extends Thread {
                     Method_PT_Uplink();
                     break;
                 case "PT_Downlink":
-
+                    Method_PT_Downlink();
                     break;
                 case "PT_Report":
-
+                    Method_PT_Report();
                     break;
                 case "MV_Uplink":
                     isThreadMethod = true;
@@ -218,7 +218,7 @@ public class Connection extends Thread {
         }
     }
 
-    private void downlink_Client_rcv() {
+    private double downlink_Client_rcv() {
         int num_packets = 0;
         String inputLine = "";
         int counter = 0;
@@ -228,8 +228,8 @@ public class Connection extends Thread {
         double gapTimeSrv = 0.0;
         double gapTimeClt = 0.0;
         double byteCounter = 0.0;
-        double estTotalUpBandWidth = 0.0;
-        double estAvailiableUpBandWidth = 0.0;
+        double estTotalDownBandWidth = 0.0;
+        double estAvailiableDownBandWidth = 0.0;
         double availableBWFraction = 1.0;
         try {
             System.out.println("downlink_Client_rcv STARTED!");
@@ -262,20 +262,21 @@ public class Connection extends Thread {
             gapTimeSrv = endTime - startTime;
             // Bandwidth calculation
             // 1 Mbit/s = 125 Byte/ms 
-            estTotalUpBandWidth = byteCounter / gapTimeSrv / 125.0;
+            estTotalDownBandWidth = byteCounter / gapTimeSrv / 125.0;
             availableBWFraction = Math.min(gapTimeClt / gapTimeSrv, 1.0);
-            estAvailiableUpBandWidth = estTotalUpBandWidth / availableBWFraction;
+            estAvailiableDownBandWidth = estTotalDownBandWidth / availableBWFraction;
 
             // Display information at the server side
             System.out.println("Receive single Pkt size is " + singlePktSize + " Bytes.");
             System.out.println("Total receiving " + counter + " packets.");
             System.out.println("Client gap time is " + gapTimeClt + " ms.");
             System.out.println("Total package received " + byteCounter + " Bytes with " + gapTimeSrv + " ms total GAP.");
-            System.out.println("Estimated Total download bandwidth is " + estTotalUpBandWidth + " Mbits/sec.");
+            System.out.println("Estimated Total download bandwidth is " + estTotalDownBandWidth + " Mbits/sec.");
             System.out.println("Availabe fraction is " + availableBWFraction);
-            System.out.println("Estimated Available download bandwidth is " + estAvailiableUpBandWidth + " Mbits/sec.");
+            System.out.println("Estimated Available download bandwidth is " + estAvailiableDownBandWidth + " Mbits/sec.");
             System.err.println("downlink_Client_rcv DONE!");
         }
+        return estAvailiableDownBandWidth;
     }
 
     private void Method_PT_Uplink() {
@@ -283,66 +284,106 @@ public class Connection extends Thread {
         try {
             //Uplink App
             dataIn.readByte();
-            uplink_Client_snd();
-
+            for (int p = 0; p < 10; p++) {
+                dataIn.readByte();
+                uplink_Client_snd();
+            }
+            //Run Iperf
+            if (isNagleDisable) {
+                String cmd = "iperf3 -p 11010 -M -N -t 10 -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218";
+                runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
+                runShell.run();
+            } else {
+                String cmd = "iperf3 -p 11010 -M -t 10 -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218";
+                runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
+                runShell.run();
+            }
         } catch (IOException ex) {
             ex.printStackTrace();
+        } finally {
+            try {
+                //Create new ClientThread for Downlink
+                s_down = new Socket(Constants.SERVER_IP, Constants.SERVERPORT);
+                TCP_param = new TCP_Properties(s_down, isNagleDisable);
+                dataOut = new DataOutputStream(s_down.getOutputStream());
+                dataOut.writeInt(this.ID);
+                Thread c = new Connection(this.ID, s_down, this.dataMeasurement, isNagleDisable);
+                c.start();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
         }
-        //Run Iperf
-//            if (isNagleDisable) {
-//                String cmd = "iperf3 -p 11010 -M -N -t 10 -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218";
-//                runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
-//                runShell.run();
-//            } else {
-//                String cmd = "iperf3 -p 11010 -M -t 10 -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218";
-//                runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
-//                runShell.run();
-//            }
-        //Downlink App
-//            AvailableBW.clear();
-//            dataOut.writeByte(2);
-//            downlink_Client_rcv();
-//
-//            //Run Iperf
-//            if (isNagleDisable) {
-//                String cmd = "iperf3 -p 11010 -M -N -t 10 -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218 -R";
-//                runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, false);
-//                runShell.run();
-//            } else {
-//                String cmd = "iperf3 -p 11010 -M -t 10 -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218 -R";
-//                runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, false);
-//                runShell.run();
-//            }
-//        } catch (IOException ex) {
-//            ex.printStackTrace();
-//        }
-        //Report Measurements - AvailableBW_down Vector
 
-//        try {
-//            //Report AvailableBW_down 
-//            dataOut.writeByte(2);
-//            dataOut.writeInt(AvailableBW.size());
-//            for (int k = 0; k < AvailableBW.size(); k++) {
-//                dataOut.writeInt(AvailableBW.get(k));
-//                dataOut.flush();
-//            }
-//            //Report Shell Vector from terminal Uplink
-//            dataOut.writeInt(dataMeasurement.ByteSecondShell_up.size());
-//            for (int b = 0; b < dataMeasurement.ByteSecondShell_up.size(); b++) {
-//                dataOut.writeInt(dataMeasurement.ByteSecondShell_up.get(b));
-//                dataOut.flush();
-//            }
-//            //Report Shell Vector from terminal Downlink
-//            dataOut.writeInt(dataMeasurement.ByteSecondShell_down.size());
-//            for (int b = 0; b < dataMeasurement.ByteSecondShell_down.size(); b++) {
-//                dataOut.writeInt(dataMeasurement.ByteSecondShell_down.get(b));
-//                dataOut.flush();
-//            }
-//        } catch (IOException ex) {
-//            ex.printStackTrace();
-//        } finally {
-//            System.err.println("Method_PT along with report is done!");
-//        }
+    }
+
+    private void Method_PT_Downlink() {
+        //Measurements
+        try {
+            //Downlink App
+            AvailableBW.clear();
+            dataIn.readByte();
+            double BW = 0;
+            for (int p = 0; p < 10; p++) {
+                BW = 0;
+                dataOut.writeByte(2);
+                BW = downlink_Client_rcv();
+                AvailableBW.add(BW);
+            }
+            //Run Iperf
+            if (isNagleDisable) {
+                String cmd = "iperf3 -p 11010 -M -N -t 10 -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218 -R";
+                runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, false);
+                runShell.run();
+            } else {
+                String cmd = "iperf3 -p 11010 -M -t 10 -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218 -R";
+                runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, false);
+                runShell.run();
+            }
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        } finally {
+            try {
+                //Create new ClientThread for Report
+                s_report = new Socket(Constants.SERVER_IP, Constants.SERVERPORT);
+                TCP_param = new TCP_Properties(s_report, isNagleDisable);
+                dataOut = new DataOutputStream(s_report.getOutputStream());
+                dataOut.writeInt(this.ID);
+                Thread c = new Connection(this.ID, s_report, this.dataMeasurement, isNagleDisable);
+                c.start();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
+
+    }
+
+    private void Method_PT_Report() {
+        //Report Measurements - AvailableBW_down Vector
+        try {
+            //Report AvailableBW_down 
+            dataOut.writeByte(2);
+            dataOut.writeInt(AvailableBW.size());
+            for (int k = 0; k < AvailableBW.size(); k++) {
+                dataOut.writeDouble(AvailableBW.get(k));
+                dataOut.flush();
+            }
+            //Report Shell Vector from terminal Uplink
+            dataOut.writeInt(dataMeasurement.ByteSecondShell_up.size());
+            for (int b = 0; b < dataMeasurement.ByteSecondShell_up.size(); b++) {
+                dataOut.writeInt(dataMeasurement.ByteSecondShell_up.get(b));
+                dataOut.flush();
+            }
+            //Report Shell Vector from terminal Downlink
+            dataOut.writeInt(dataMeasurement.ByteSecondShell_down.size());
+            for (int b = 0; b < dataMeasurement.ByteSecondShell_down.size(); b++) {
+                dataOut.writeInt(dataMeasurement.ByteSecondShell_down.get(b));
+                dataOut.flush();
+            }
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        } finally {
+            System.err.println("Method_PT along with report is done!");
+        }
     }
 
     private void Method_MV_Uplink_Client() throws InterruptedException {
