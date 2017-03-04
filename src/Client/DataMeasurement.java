@@ -38,12 +38,7 @@ public class DataMeasurement {
     protected Vector<DataSample> SamplesBlock = null;
     protected Vector<Integer> SampleSecond_up = null;
     protected Vector<Integer> SampleSecond_down = null;
-    protected Vector<Long> deltaINVector_uplink = null; //Sending time uplink vector 
-    protected Vector<Long> deltaOUTVector_uplink = null; //Arrival time uplink vector
-    protected Vector<Long> deltaINVector_downlink = null; //Sending time downlink vector
-    protected Vector<Long> deltaOUTVector_downlink = null; //Arrival time downlink vector
-    protected Vector<Long> aux_writeTimeVector = null;
-    protected Vector<Long> ACKTimingVector = null;
+    protected Vector<Double> AvailableBW_Down=null;
 
     public DataMeasurement() {
         try {
@@ -54,12 +49,7 @@ public class DataMeasurement {
             SamplesBlock = new Vector<DataSample>();
             SampleSecond_up = new Vector<Integer>();
             SampleSecond_down = new Vector<Integer>();
-            deltaINVector_uplink = new Vector<Long>();
-            deltaOUTVector_uplink = new Vector<Long>();
-            deltaINVector_downlink = new Vector<Long>();
-            deltaOUTVector_downlink = new Vector<Long>();
-            aux_writeTimeVector = new Vector<Long>();
-            ACKTimingVector = new Vector<Long>();
+            AvailableBW_Down = new Vector<Double>();
         } catch (Exception ex) {
             ex.getStackTrace();
         }

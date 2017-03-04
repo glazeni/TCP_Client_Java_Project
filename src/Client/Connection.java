@@ -12,6 +12,7 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.Random;
 import java.util.Vector;
+import java.util.concurrent.locks.LockSupport;
 
 public class Connection extends Thread {
 
@@ -31,13 +32,10 @@ public class Connection extends Thread {
     private int byteCnt = 0;
     private boolean isThreadMethod;
     private String METHOD = null;
-    private Vector<Double> AvailableBW = null;
     private TCP_Properties TCP_param = null;
     private long runningTime = 35000;
     private int ID = 0;
     private boolean isNagleDisable;
-    private long firstPacket = 0;
-    private long lastPacket = 0;
 
     public Connection(int _ID, Socket _s, DataMeasurement _dataMeasurement, boolean _isNagleDisable) {
         try {
@@ -52,7 +50,6 @@ public class Connection extends Thread {
             outCtrl = new PrintWriter(RTout, true);
             inCtrl = new BufferedReader(new InputStreamReader(RTin));
 
-            AvailableBW = new Vector<Double>();
         } catch (Exception e) {
             System.out.println("Error in connection:" + e.getMessage());
         }
@@ -142,9 +139,10 @@ public class Connection extends Thread {
                 // create train gap
                 try {
                     if (Constants.PACKET_GAP > 0) {
-                        Thread.sleep(Constants.PACKET_GAP);
+                        LockSupport.parkNanos(100);
+                        //Thread.sleep(Constants.PACKET_GAP);
                     }
-                } catch (InterruptedException e) {
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
                 counter++;
@@ -320,14 +318,14 @@ public class Connection extends Thread {
         //Measurements
         try {
             //Downlink App
-            AvailableBW.clear();
+            dataMeasurement.AvailableBW_Down.clear();
             dataIn.readByte();
             double BW = 0;
             for (int p = 0; p < 10; p++) {
                 BW = 0;
                 dataOut.writeByte(2);
                 BW = downlink_Client_rcv();
-                AvailableBW.add(BW);
+                dataMeasurement.AvailableBW_Down.add(BW);
             }
             //Run Iperf
             if (isNagleDisable) {
@@ -362,9 +360,9 @@ public class Connection extends Thread {
         try {
             //Report AvailableBW_down 
             dataOut.writeByte(2);
-            dataOut.writeInt(AvailableBW.size());
-            for (int k = 0; k < AvailableBW.size(); k++) {
-                dataOut.writeDouble(AvailableBW.get(k));
+            dataOut.writeInt(dataMeasurement.AvailableBW_Down.size());
+            for (int k = 0; k < dataMeasurement.AvailableBW_Down.size(); k++) {
+                dataOut.writeDouble(dataMeasurement.AvailableBW_Down.get(k));
                 dataOut.flush();
             }
             //Report Shell Vector from terminal Uplink
