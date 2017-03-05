@@ -14,11 +14,9 @@ public class RTInputStream extends FilterInputStream {
 
     private int bytesTotal = 0;
     public static int bytesGraph=0;
-    public Vector<Long> readTimeVector = null;
 
     public RTInputStream(InputStream in) {
         super(in);
-        readTimeVector = new Vector<Long>();
     }
 
     @Override

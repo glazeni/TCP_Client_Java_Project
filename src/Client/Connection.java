@@ -118,15 +118,13 @@ public class Connection extends Thread {
         try {
             System.out.println("uplink_Client_snd STARTED!");
 
-            byte[] payload = new byte[Constants.PACKETSIZE];
+            byte[] payload = new byte[Constants.PACKETSIZE_UPLINK];
             Random rand = new Random();
             // Randomize the payload with chars between 'a' to 'z' and 'A' to 'Z'  to assure there is no "\r\n"
             for (int i = 0; i < payload.length; i++) {
                 payload[i] = (byte) ('A' + rand.nextInt(52));
             }
             //Send Packet Train
-            dataOut.writeInt(Constants.NUMBER_PACKETS);
-            dataOut.flush();
             while (counter < Constants.NUMBER_PACKETS) {
                 // start recording the first packet send time
                 if (beforeTime == 0) {
@@ -232,8 +230,6 @@ public class Connection extends Thread {
         try {
             System.out.println("downlink_Client_rcv STARTED!");
             //Receive Packet Train
-            num_packets = dataIn.readInt();
-            System.out.println("NUM_PACKETS:" + num_packets);
             while ((inputLine = inCtrl.readLine()) != null) {
                 if (startTime == 0) {
                     startTime = System.currentTimeMillis();

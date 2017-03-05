@@ -12,11 +12,8 @@ import java.util.Vector;
 
 public class RTOutputStream extends FilterOutputStream {
 
-    public Vector<Long> writeTimeVector = null;
-
     RTOutputStream(OutputStream out) {
         super(out);
-        writeTimeVector = new Vector<Long>();
     }
 
     @Override

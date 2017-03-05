@@ -12,9 +12,9 @@ public class TCPClient extends Thread {
     private Connection connection = null;
     private TCP_Properties TCP_param = null;
     private DataMeasurement dataMeasurement = null;
-    private int ID = 0; 
+    private int ID = 0;
     public boolean isNagleDisable;
-    
+
     public TCPClient(boolean _isNagleDisable) {
         try {
             this.isNagleDisable = _isNagleDisable;
@@ -32,13 +32,17 @@ public class TCPClient extends Thread {
             ID = dis.readInt();
             dos.writeBoolean(isNagleDisable);
             dos.flush();
+            dos.writeInt(Constants.NUMBER_PACKETS);
+            dos.flush();
+            dos.writeInt(Constants.PACKETSIZE_DOWNLINK);
+            dos.flush();
             dos.writeInt(Constants.BUFFERSIZE);
             dos.flush();
             dos.writeInt(Constants.SOCKET_RCVBUF);
             dos.flush();
             dos.writeInt(Constants.SOCKET_SNDBUF);
             dos.flush();
-            System.err.println("isNagleDisable: "+isNagleDisable );
+            System.err.println("isNagleDisable: " + isNagleDisable);
             connection = new Connection(ID, s_up, dataMeasurement, isNagleDisable);
 
         } catch (Exception ex) {
@@ -55,6 +59,7 @@ public class TCPClient extends Thread {
             System.err.println("Client connection error: " + ex.getMessage());
         }
     }
+
     public static void main(String[] args) {
         TCPClient tcpClient = new TCPClient(true);
         tcpClient.start();
