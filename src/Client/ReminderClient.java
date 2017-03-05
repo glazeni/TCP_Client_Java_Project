@@ -24,7 +24,7 @@ public class ReminderClient extends Thread {
         this.RTin = _RTin;
         timer = new Timer();
         //timer.schedule(new RemindTask(), 0, seconds);
-        timer.scheduleAtFixedRate(new RemindTask(), 0, (seconds * 1000));
+        timer.scheduleAtFixedRate(new RemindTask(this.RTin), 0, (seconds * 1000));
 
     }
 
@@ -33,21 +33,21 @@ public class ReminderClient extends Thread {
     }
 
     class RemindTask extends TimerTask {
-
-        public RemindTask() {
-            //Do nothihng in constructor
+        private RTInputStream RTinput=null;
+        public RemindTask(RTInputStream _RTinput) {
+            this.RTinput = _RTinput;
         }
 
         @Override
         public void run() {
             try {
-                dataMeasurement.add_SampleSecond_down(RTin.getBytes2Bits());
-                System.out.println("REMINDER CLIENT" + i + " with " + "bits=" + RTin.getBytes2Bits());
+                dataMeasurement.add_SampleSecond_down(this.RTinput.getBytes2Bits());
+                System.out.println("REMINDER CLIENT" + i + " with " + "bits=" + this.RTinput.getBytes2Bits());
                 i++;
             } catch (Exception ex) {
                 ex.printStackTrace();
             } finally {
-                RTin.clearBytes();
+                this.RTinput.clearBytes();
             }
         }
     }
