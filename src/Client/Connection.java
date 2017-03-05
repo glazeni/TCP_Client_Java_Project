@@ -33,7 +33,7 @@ public class Connection extends Thread {
     private boolean isThreadMethod;
     private String METHOD = null;
     private TCP_Properties TCP_param = null;
-    private long runningTime = 35000;
+    private long runningTime = 32000;
     private int ID = 0;
     private boolean isNagleDisable;
 
