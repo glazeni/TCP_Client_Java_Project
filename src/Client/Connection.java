@@ -161,7 +161,8 @@ public class Connection extends Thread {
         try {
             byte[] snd_buf = new byte[Constants.BUFFERSIZE];
             new Random().nextBytes(snd_buf);
-            while (keepRunning) {
+            long end = System.currentTimeMillis()+10000;
+            while (System.currentTimeMillis()<end){//keepRunning) {
                 RTout.write(snd_buf);
             }
             return true;
@@ -181,7 +182,7 @@ public class Connection extends Thread {
             if (isThreadMethod) {
                 reminderClient = new ReminderClient(1, this.dataMeasurement, this.RTin);
             }
-            while (System.currentTimeMillis() < _end) {
+            while (true){//System.currentTimeMillis() < _end) {
                 byteCnt = 0;
                 //Cycle to read each block
                 do {

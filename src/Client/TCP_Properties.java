@@ -10,7 +10,7 @@ public class TCP_Properties {
     public TCP_Properties(Socket s, boolean isNagleDisable) throws SocketException {
         
         //s.setPerformancePreferences(0, 0, 1); 
-        s.setSendBufferSize(Constants.SOCKET_RCVBUF);
+        s.setSendBufferSize(Constants.SOCKET_SNDBUF);
         s.setReceiveBufferSize(Constants.SOCKET_RCVBUF);
         s.setSoTimeout(Constants.SO_TIMEOUT);
         s.setTcpNoDelay(isNagleDisable);//true- Disable Nagle's Algorithm / false-otherwise
