@@ -40,6 +40,8 @@ public class DataMeasurement {
     protected Vector<Integer> SampleSecond_down = null;
     protected Vector<Double> AvailableBW_Down=null;
 
+    protected double GraphBW_down=0;
+    protected int GraphTCPWindow_down=0;
     public DataMeasurement() {
         try {
             ByteSecondShell_up = new Vector<Integer>();

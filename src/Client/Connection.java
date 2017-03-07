@@ -100,6 +100,7 @@ public class Connection extends Thread {
             ex.printStackTrace();
             System.err.println("Sending Data Failure:" + ex.getMessage());
         } finally {
+
             try {
                 if (s != null) {
                     s.close();
@@ -136,10 +137,8 @@ public class Connection extends Thread {
 
                 // create train gap
                 try {
-                    if (Constants.PACKET_GAP > 0) {
-                        LockSupport.parkNanos(100);
-                        //Thread.sleep(Constants.PACKET_GAP);
-                    }
+                    LockSupport.parkNanos(Constants.PACKET_GAP);
+                    //Thread.sleep(Constants.PACKET_GAP);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -152,7 +151,7 @@ public class Connection extends Thread {
         } catch (Exception ex) {
             ex.printStackTrace();
         } finally {
-            System.err.println("uplink_Client_snd DONE");
+            System.out.println("uplink_Client_snd DONE");
         }
     }
 
@@ -161,8 +160,8 @@ public class Connection extends Thread {
         try {
             byte[] snd_buf = new byte[Constants.BUFFERSIZE];
             new Random().nextBytes(snd_buf);
-            long end = System.currentTimeMillis()+10000;
-            while (System.currentTimeMillis()<end){//keepRunning) {
+            long end = System.currentTimeMillis() + 10000;
+            while (keepRunning) {
                 RTout.write(snd_buf);
             }
             return true;
@@ -177,29 +176,28 @@ public class Connection extends Thread {
         try {
             byte[] rcv_buf = new byte[Constants.BUFFERSIZE];
             int n = 0;
-            System.out.println("\n downlink_Client_rcvInSeconds");
+            System.out.println("\n downlink_Client_rcvInSeconds STARTED");
             //Initialize Timer
             if (isThreadMethod) {
                 reminderClient = new ReminderClient(1, this.dataMeasurement, this.RTin);
             }
-            while (true){//System.currentTimeMillis() < _end) {
+            while (System.currentTimeMillis() < _end) {
                 byteCnt = 0;
                 //Cycle to read each block
-                do {
-                    n = RTin.read(rcv_buf, byteCnt, Constants.BUFFERSIZE - byteCnt);
+                //do {
+                n = RTin.read(rcv_buf, byteCnt, Constants.BUFFERSIZE - byteCnt);
 
-                    if (n > 0) {
-                        byteCnt += n;
-                        if (!isThreadMethod) {
-                            dataMeasurement.add_SampleReadTime(n, System.currentTimeMillis());
-                        }
-                    } else {
-                        System.err.println("Read n<0");
-                        break;
+                if (n > 0) {
+                    byteCnt += n;
+                    if (!isThreadMethod) {
+                        dataMeasurement.add_SampleReadTime(n, System.currentTimeMillis());
                     }
+                } else {
+                    System.err.println("Read n<0");
+                    break;
+                }
 
-                } while ((n > 0) && (byteCnt < Constants.BUFFERSIZE));
-
+                //} while ((n > 0) && (byteCnt < Constants.BUFFERSIZE));
                 if (n == -1) {
                     System.out.println("Exited with n=-1");
                     break;
@@ -209,6 +207,7 @@ public class Connection extends Thread {
         } catch (IOException ex) {
             return false;
         } finally {
+            System.out.println("\n downlink_Client_rcvInSeconds DONE");
             if (isThreadMethod) {
                 reminderClient.cancelTimer();
             }
@@ -274,22 +273,24 @@ public class Connection extends Thread {
         return estAvailiableDownBandWidth;
     }
 
-    private void Method_PT_Uplink() {
+    private void Method_PT_Uplink() throws InterruptedException {
         //Measurements
         try {
             //Uplink App
             dataIn.readByte();
-            for (int p = 0; p < 10; p++) {
+            for (int p = 0; p < 11; p++) {
+                Constants.PACKET_GAP = 1000000 * p;
+                System.out.println("PACKET_GAP=" + Constants.PACKET_GAP);
                 dataIn.readByte();
                 uplink_Client_snd();
             }
             //Run Iperf
             if (isNagleDisable) {
-                String cmd = "iperf3 -p 11010 -M -N -t 10 -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218";
+                String cmd = "iperf3 -p 11010 -M -N -t " + runningTime / 1000 + " -w " + Constants.SOCKET_RCVBUF + " -c 193.136.127.218";
                 runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
                 runShell.run();
             } else {
-                String cmd = "iperf3 -p 11010 -M -t 10 -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218";
+                String cmd = "iperf3 -p 11010 -M -t " + runningTime / 1000 + " -w " + Constants.SOCKET_RCVBUF + " -c 193.136.127.218";
                 runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
                 runShell.run();
             }
@@ -304,6 +305,7 @@ public class Connection extends Thread {
                 dataOut.writeInt(this.ID);
                 Thread c = new Connection(this.ID, s_down, this.dataMeasurement, isNagleDisable);
                 c.start();
+                c.join();
             } catch (IOException ex) {
                 ex.printStackTrace();
             }
@@ -311,26 +313,24 @@ public class Connection extends Thread {
 
     }
 
-    private void Method_PT_Downlink() {
+    private void Method_PT_Downlink() throws InterruptedException {
         //Measurements
         try {
             //Downlink App
             dataMeasurement.AvailableBW_Down.clear();
             dataIn.readByte();
-            double BW = 0;
-            for (int p = 0; p < 10; p++) {
-                BW = 0;
+            for (int p = 0; p < 9; p++) {
                 dataOut.writeByte(2);
-                BW = downlink_Client_rcv();
+                double BW = downlink_Client_rcv();
                 dataMeasurement.AvailableBW_Down.add(BW);
             }
             //Run Iperf
             if (isNagleDisable) {
-                String cmd = "iperf3 -p 11010 -M -N -t 10 -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218 -R";
+                String cmd = "iperf3 -p 11010 -M -N -t " + runningTime / 1000 + " -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218 -R";
                 runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, false);
                 runShell.run();
             } else {
-                String cmd = "iperf3 -p 11010 -M -t 10 -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218 -R";
+                String cmd = "iperf3 -p 11010 -M -t " + runningTime / 1000 + " -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218 -R";
                 runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, false);
                 runShell.run();
             }
@@ -345,6 +345,7 @@ public class Connection extends Thread {
                 dataOut.writeInt(this.ID);
                 Thread c = new Connection(this.ID, s_report, this.dataMeasurement, isNagleDisable);
                 c.start();
+                c.join();
             } catch (IOException ex) {
                 ex.printStackTrace();
             }
@@ -390,12 +391,13 @@ public class Connection extends Thread {
             //Run Both Tests
             if (isNagleDisable) {
                 uplink_Client_sndInSeconds();
-                String cmd = "iperf3 -p 11010 -t 35 -i 1 -M -N -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218";
+                String cmd = "iperf3 -p 11010 -t " + runningTime / 1000 + " -i 1 -M -N -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218";
                 runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
                 runShell.run();
+
             } else {
                 uplink_Client_sndInSeconds();
-                String cmd = "iperf3 -p 11010 -t 35 -i 1 -M -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218";
+                String cmd = "iperf3 -p 11010 -t " + runningTime / 1000 + " -i 1 -M -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218";
                 runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
                 runShell.run();
             }
@@ -410,6 +412,7 @@ public class Connection extends Thread {
                 dataOut.writeInt(this.ID);
                 Thread c = new Connection(this.ID, s_down, this.dataMeasurement, isNagleDisable);
                 c.start();
+                c.join();
             } catch (IOException ex) {
                 ex.printStackTrace();
             }
@@ -428,13 +431,13 @@ public class Connection extends Thread {
             if (isNagleDisable) {
                 long end = System.currentTimeMillis() + runningTime;
                 downlink_Client_rcvInSeconds(end);
-                String cmd = "iperf3 -p 11010 -t 35 -i 1 -M -N -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218 -R";
+                String cmd = "iperf3 -p 11010 -t " + runningTime / 1000 + " -i 1 -M -N -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218 -R";
                 runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, false);
                 runShell.run();
             } else {
                 long end = System.currentTimeMillis() + runningTime;
                 downlink_Client_rcvInSeconds(end);
-                String cmd = "iperf3 -p 11010 -t 35 -i 1 -M -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218 -R";
+                String cmd = "iperf3 -p 11010 -t " + runningTime / 1000 + " -i 1 -M -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218 -R";
                 runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, false);
                 runShell.run();
             }
@@ -449,6 +452,7 @@ public class Connection extends Thread {
                 dataOut.writeInt(this.ID);
                 Thread c = new Connection(this.ID, s_report, this.dataMeasurement, isNagleDisable);
                 c.start();
+                c.join();
             } catch (IOException ex) {
                 ex.printStackTrace();
             }
@@ -480,7 +484,7 @@ public class Connection extends Thread {
         } catch (IOException ex) {
             ex.printStackTrace();
         } finally {
-            System.err.println("Method_MV_Client along with Report is done!");
+            System.out.println("Method_MV_Client along with Report is done!");
         }
     }
 
@@ -492,12 +496,12 @@ public class Connection extends Thread {
             //Run Both Tests
             if (isNagleDisable) {
                 uplink_Client_sndInSeconds();
-                String cmd = "iperf3 -p 11010 -t 35 -i 1 -M -N -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218";
+                String cmd = "iperf3 -p 11010 -t " + runningTime / 1000 + " -i 1 -M -N -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218";
                 runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
                 runShell.run();
             } else {
                 uplink_Client_sndInSeconds();
-                String cmd = "iperf3 -p 11010 -t 35 -i 1 -M -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218";
+                String cmd = "iperf3 -p 11010 -t " + runningTime / 1000 + " -i 1 -M -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218";
                 runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
                 runShell.run();
             }
@@ -512,6 +516,7 @@ public class Connection extends Thread {
                 dataOut.writeInt(this.ID);
                 Thread c = new Connection(this.ID, s_down, this.dataMeasurement, isNagleDisable);
                 c.start();
+                c.join();
             } catch (IOException ex) {
                 ex.printStackTrace();
             }
@@ -528,13 +533,13 @@ public class Connection extends Thread {
             if (isNagleDisable) {
                 long end = System.currentTimeMillis() + runningTime;
                 downlink_Client_rcvInSeconds(end);
-                String cmd = "iperf3 -p 11010 -t 35 -i 1 -M -N -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218 -R";
+                String cmd = "iperf3 -p 11010 -t " + runningTime / 1000 + " -i 1 -M -N -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218 -R";
                 runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, false);
                 runShell.run();
             } else {
                 long end = System.currentTimeMillis() + runningTime;
                 downlink_Client_rcvInSeconds(end);
-                String cmd = "iperf3 -p 11010 -t 35 -i 1 -M -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218 -R";
+                String cmd = "iperf3 -p 11010 -t " + runningTime / 1000 + " -i 1 -M -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218 -R";
                 runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, false);
                 runShell.run();
             }
@@ -549,6 +554,7 @@ public class Connection extends Thread {
                 dataOut.writeInt(this.ID);
                 Thread c = new Connection(this.ID, s_report, this.dataMeasurement, isNagleDisable);
                 c.start();
+                c.join();
             } catch (IOException ex) {
                 ex.printStackTrace();
             }
@@ -582,7 +588,7 @@ public class Connection extends Thread {
         } catch (IOException ex) {
             ex.printStackTrace();
         } finally {
-            System.err.println("Method_MV_readVector_Client along with Report is done!");
+            System.out.println("Method_MV_readVector_Client along with Report is done!");
         }
     }
 }

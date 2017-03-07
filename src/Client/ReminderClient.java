@@ -24,18 +24,18 @@ public class ReminderClient extends Thread {
         this.RTin = _RTin;
         timer = new Timer();
         //timer.schedule(new RemindTask(), 0, seconds);
-        timer.scheduleAtFixedRate(new RemindTask(this.RTin), 0, (seconds * 1000));
+        timer.scheduleAtFixedRate(new RemindTask(this.RTin), 0, seconds*1000);
 
     }
 
-    public void cancelTimer() {
+    public synchronized void cancelTimer() {
         timer.cancel();
     }
 
-    class RemindTask extends TimerTask {
+    class RemindTask extends TimerTask{
         private RTInputStream RTinput=null;
-        public RemindTask(RTInputStream _RTinput) {
-            this.RTinput = _RTinput;
+        public RemindTask(RTInputStream _RTInput) {
+            this.RTinput = _RTInput;
         }
 
         @Override

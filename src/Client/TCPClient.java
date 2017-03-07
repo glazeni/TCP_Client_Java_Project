@@ -4,6 +4,10 @@ package Client;
 
 import java.net.*;
 import java.io.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 //Java Client Main Class
 public class TCPClient extends Thread {
@@ -17,6 +21,7 @@ public class TCPClient extends Thread {
 
     public TCPClient(boolean _isNagleDisable) {
         try {
+            
             this.isNagleDisable = _isNagleDisable;
             //Data Measurement
             dataMeasurement = new DataMeasurement();
@@ -52,16 +57,27 @@ public class TCPClient extends Thread {
 
     @Override
     public void run() {
+
         try {
             connection.start();
-            System.err.println("Client started connected to Port: " + Constants.SERVERPORT + "\n");
+            connection.join();
+            
+//            if (Constants.SOCKET_RCVBUF < (int) Math.pow(2, 9) * 1000) {
+//                Constants.SOCKET_RCVBUF = Constants.SOCKET_RCVBUF*2;
+//                Constants.SOCKET_SNDBUF = Constants.SOCKET_SNDBUF*2;
+//                TCPClient tcpc2 = new TCPClient(false);
+//                tcpc2.start();
+//            }
+            System.out.println("Client started connected to Port: " + Constants.SERVERPORT + "\n");
         } catch (Exception ex) {
             System.err.println("Client connection error: " + ex.getMessage());
         }
+
     }
 
-    public static void main(String[] args) {
-        TCPClient tcpClient = new TCPClient(true);
-        tcpClient.start();
+    public static void main(String[] args) throws InterruptedException {
+
+            TCPClient tcpc =  new TCPClient(true);
+            tcpc.start();
     }
 }
