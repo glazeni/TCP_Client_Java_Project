@@ -62,12 +62,12 @@ public class TCPClient extends Thread {
             connection.start();
             connection.join();
             
-//            if (Constants.SOCKET_RCVBUF < (int) Math.pow(2, 9) * 1000) {
-//                Constants.SOCKET_RCVBUF = Constants.SOCKET_RCVBUF * 2;
-//                Constants.SOCKET_SNDBUF = Constants.SOCKET_SNDBUF * 2;
-//                TCPClient tcpc2 = new TCPClient(false);
-//                tcpc2.start();
-//            }
+            if (Constants.SOCKET_RCVBUF < (int) Math.pow(2, 9) * 1000) {
+                Constants.SOCKET_RCVBUF = Constants.SOCKET_RCVBUF * 2;
+                Constants.SOCKET_SNDBUF = Constants.SOCKET_SNDBUF * 2;
+                TCPClient tcpc2 = new TCPClient(false);
+                tcpc2.start();
+            }
             System.out.println("Client started connected to Port: " + Constants.SERVERPORT + "\n");
         } catch (Exception ex) {
             System.err.println("Client connection error: " + ex.getMessage());
