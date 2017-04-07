@@ -27,7 +27,7 @@ public class RTOutputStream extends PrintStream {
     @Override
     public void write(byte data[], int off, int len) {
         super.write(data, off, len);
-        super.flush();
+        super.flush();       
     }
     
 }

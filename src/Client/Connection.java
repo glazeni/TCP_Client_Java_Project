@@ -36,7 +36,7 @@ public class Connection extends Thread {
     private boolean isThreadMethod;
     private String METHOD = null;
     private TCP_Properties TCP_param = null;
-    private long runningTime = 32000;
+    private long runningTime = 10000;
     private int ID = 0;
     private boolean isNagleDisable;
 
@@ -162,12 +162,14 @@ public class Connection extends Thread {
         try {
             byte[] snd_buf = new byte[Constants.BUFFERSIZE];
             new Random().nextBytes(snd_buf);
-            long end = System.currentTimeMillis() + 10000;
             while (keepRunning) {
-                RTout.write(snd_buf, 0, Constants.BUFFERSIZE);
+                RTout.write(snd_buf);
+                if (RTout.checkError()) {
+                    break;
+                }
             }
             return true;
-        } catch (Exception ex) {
+        } catch (IOException ex) {
             return false;
         } finally {
             keepRunning = false;
@@ -175,10 +177,10 @@ public class Connection extends Thread {
     }
 
     private boolean downlink_Client_rcvInSeconds(long _end) {
+        System.out.println("\n downlink_Client_rcvInSeconds STARTED");
         try {
             byte[] rcv_buf = new byte[Constants.BUFFERSIZE];
             int n = 0;
-            System.out.println("\n downlink_Client_rcvInSeconds STARTED");
             //Initialize Timer
             if (isThreadMethod) {
                 reminderClient = new ReminderClient(1, this.dataMeasurement, this.RTin);
@@ -209,10 +211,10 @@ public class Connection extends Thread {
         } catch (IOException ex) {
             return false;
         } finally {
-            System.out.println("\n downlink_Client_rcvInSeconds DONE");
             if (isThreadMethod) {
                 reminderClient.cancelTimer();
             }
+            System.out.println("\n downlink_Client_rcvInSeconds DONE");
         }
     }
 
@@ -229,8 +231,8 @@ public class Connection extends Thread {
         double estTotalDownBandWidth = 0.0;
         double estAvailiableDownBandWidth = 0.0;
         double availableBWFraction = 1.0;
+        System.out.println("downlink_Client_rcv STARTED!");
         try {
-            System.out.println("downlink_Client_rcv STARTED!");
             //Receive Packet Train
             while ((inputLine = inCtrl.readLine()) != null) {
                 if (startTime == 0) {
@@ -395,15 +397,15 @@ public class Connection extends Thread {
             //Run Both Tests
             if (isNagleDisable) {
                 uplink_Client_sndInSeconds();
-                //String cmd = "iperf3 -p 11010 -t " + runningTime / 1000 + " -i 1 -M -N -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218";
-                //runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
-                //runShell.run();
+                String cmd = "iperf3 -p 11010 -t " + runningTime / 1000 + " -i 1 -M -N -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218";
+                runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
+                runShell.run();
 
             } else {
                 uplink_Client_sndInSeconds();
-//                String cmd = "iperf3 -p 11010 -t " + runningTime / 1000 + " -i 1 -M -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218";
-//                runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
-//                runShell.run();
+                String cmd = "iperf3 -p 11010 -t " + runningTime / 1000 + " -i 1 -M -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218";
+                runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
+                runShell.run();
             }
         } catch (IOException ex) {
             ex.printStackTrace();
