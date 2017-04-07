@@ -6,8 +6,11 @@ package Client;
 import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.Random;
@@ -49,7 +52,6 @@ public class Connection extends Thread {
             dataOut = new DataOutputStream(RTout);
             outCtrl = new PrintWriter(RTout, true);
             inCtrl = new BufferedReader(new InputStreamReader(RTin));
-
         } catch (Exception e) {
             System.out.println("Error in connection:" + e.getMessage());
         }
@@ -162,10 +164,10 @@ public class Connection extends Thread {
             new Random().nextBytes(snd_buf);
             long end = System.currentTimeMillis() + 10000;
             while (keepRunning) {
-                RTout.write(snd_buf);
+                RTout.write(snd_buf, 0, Constants.BUFFERSIZE);
             }
             return true;
-        } catch (IOException ex) {
+        } catch (Exception ex) {
             return false;
         } finally {
             keepRunning = false;
@@ -281,14 +283,14 @@ public class Connection extends Thread {
             for (int p = 1; p < 11; p++) {
                 //Constants.PACKET_GAP = 1000000 * p; //1sec x p
                 //System.out.println("PACKET_GAP=" + Constants.PACKET_GAP);
-                Constants.PACKETSIZE_UPLINK = 512*p;
+                Constants.PACKETSIZE_UPLINK = 512 * p;
                 System.out.println("PACKET_SIZE=" + Constants.PACKETSIZE_UPLINK);
                 dataIn.readByte();
                 uplink_Client_snd();
             }
             //Run Iperf
             if (isNagleDisable) {
-                String cmd = "iperf3 -p 11010 -M -N -t " + runningTime / 1000 + " -w " + Constants.SOCKET_RCVBUF + " -c 193.136.127.218";                
+                String cmd = "iperf3 -p 11010 -M -N -t " + runningTime / 1000 + " -w " + Constants.SOCKET_RCVBUF + " -c 193.136.127.218";
                 runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
                 runShell.run();
             } else {
@@ -321,7 +323,7 @@ public class Connection extends Thread {
             //Downlink App
             dataMeasurement.AvailableBW_Down.clear();
             dataIn.readByte();
-            for (int p = 1; p<11; p++) {
+            for (int p = 1; p < 11; p++) {
                 dataOut.writeByte(2);
                 double BW = downlink_Client_rcv();
                 dataMeasurement.AvailableBW_Down.add(BW);
@@ -393,15 +395,15 @@ public class Connection extends Thread {
             //Run Both Tests
             if (isNagleDisable) {
                 uplink_Client_sndInSeconds();
-                String cmd = "iperf3 -p 11010 -t " + runningTime / 1000 + " -i 1 -M -N -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218";
-                runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
-                runShell.run();
+                //String cmd = "iperf3 -p 11010 -t " + runningTime / 1000 + " -i 1 -M -N -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218";
+                //runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
+                //runShell.run();
 
             } else {
                 uplink_Client_sndInSeconds();
-                String cmd = "iperf3 -p 11010 -t " + runningTime / 1000 + " -i 1 -M -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218";
-                runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
-                runShell.run();
+//                String cmd = "iperf3 -p 11010 -t " + runningTime / 1000 + " -i 1 -M -w " + Constants.SOCKET_RCVBUF + " -l " + Constants.BUFFERSIZE + " -c 193.136.127.218";
+//                runShell = new RunShellCommandsClient(this.dataMeasurement, cmd, true);
+//                runShell.run();
             }
         } catch (IOException ex) {
             ex.printStackTrace();

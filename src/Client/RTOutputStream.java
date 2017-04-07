@@ -8,19 +8,15 @@ package Client;
 import java.io.OutputStream;
 import java.io.FilterOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.Vector;
 
-public class RTOutputStream extends FilterOutputStream {
+public class RTOutputStream extends PrintStream {
 
     RTOutputStream(OutputStream out) {
         super(out);
     }
 
-    @Override
-    public void write(int b) throws IOException {
-        super.write(b);
-        super.flush();
-    }
 
     @Override
     public void write(byte data[]) throws IOException {
@@ -29,7 +25,7 @@ public class RTOutputStream extends FilterOutputStream {
     }
 
     @Override
-    public void write(byte data[], int off, int len) throws IOException {
+    public void write(byte data[], int off, int len) {
         super.write(data, off, len);
         super.flush();
     }
